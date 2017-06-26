@@ -15,6 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+#define DEBUG
+
 #include <linux/clk.h>
 #include <linux/completion.h>
 #include <linux/interrupt.h>

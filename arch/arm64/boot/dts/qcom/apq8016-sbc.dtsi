@@ -323,6 +323,12 @@
 		#size-cells = <0>;
 		port@0 {
 			reg = <0>;
+			csiphy0_ep:endpoint {
+				clock-lanes = <1>;
+				data-lanes = <0>;
+				qcom,settle-cnt = <0x18>;
+				remote-endpoint = <&ov5645_ep>;
+			};
 		};
 		port@1 {
 			reg = <1>;
@@ -425,6 +431,33 @@
 
 &blsp_i2c6 {
 	status = "ok";
+
+	camera_rear@76 {
+		compatible = "ovti,ov5645";
+		reg = <0x76>;
+
+		enable-gpios = <&msmgpio 34 0>;
+		reset-gpios = <&msmgpio 35 1>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&camera_rear_default>;
+
+		clocks = <&gcc GCC_CAMSS_MCLK0_CLK>;
+		clock-names = "xclk";
+		clock-frequency = <23880000>;
+
+		vdddo-supply = <&camera_vdddo_1v8>;
+		vdda-supply = <&camera_vdda_2v8>;
+		vddd-supply = <&camera_vddd_1v5>;
+
+		port {
+			ov5645_ep: endpoint {
+				clock-lanes = <1>;
+				data-lanes = <0>;
+				remote-endpoint = <&csiphy0_ep>;
+			};
+		};
+	};
+
 };
 
 &mdss_dsi0 {
