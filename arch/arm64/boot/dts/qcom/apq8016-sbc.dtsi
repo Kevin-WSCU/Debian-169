@@ -327,7 +327,7 @@
 				clock-lanes = <1>;
 				data-lanes = <0>;
 				qcom,settle-cnt = <0x18>;
-				remote-endpoint = <&ov5645_ep>;
+				remote-endpoint = <&ov7251_ep>;
 			};
 		};
 		port@1 {
@@ -433,7 +433,7 @@
 	status = "ok";
 
 	camera_rear@76 {
-		compatible = "ovti,ov5645";
+		compatible = "ovti,ov7251";
 		reg = <0x76>;
 
 		enable-gpios = <&msmgpio 34 0>;
@@ -450,7 +450,7 @@
 		vddd-supply = <&camera_vddd_1v5>;
 
 		port {
-			ov5645_ep: endpoint {
+			ov7251_ep: endpoint {
 				clock-lanes = <1>;
 				data-lanes = <0>;
 				remote-endpoint = <&csiphy0_ep>;
