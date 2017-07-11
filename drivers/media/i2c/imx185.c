@@ -1,14 +1,14 @@
 /*
- * Driver for the OV7251 camera sensor.
+ * Driver for the IMX185 camera sensor.
  *
  * Copyright (c) 2011-2015, The Linux Foundation. All rights reserved.
  * Copyright (C) 2015 By Tech Design S.L. All Rights Reserved.
  * Copyright (C) 2012-2013 Freescale Semiconductor, Inc. All Rights Reserved.
  *
  * Based on:
- * - the OV7251 driver from QC msm-3.10 kernel on codeaurora.org:
+ * - the IMX185 driver from QC msm-3.10 kernel on codeaurora.org:
  *   https://us.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/drivers/
- *       media/platform/msm/camera_v2/sensor/ov7251.c?h=LA.BR.1.2.4_rb1.41
+ *       media/platform/msm/camera_v2/sensor/imx185.c?h=LA.BR.1.2.4_rb1.41
  * - the OV5640 driver posted on linux-media:
  *   https://www.mail-archive.com/linux-media%40vger.kernel.org/msg92671.html
  */
@@ -43,7 +43,7 @@
 #include <media/v4l2-of.h>
 #include <media/v4l2-subdev.h>
 
-static DEFINE_MUTEX(ov7251_lock);
+static DEFINE_MUTEX(imx185_lock);
 
 /* HACKs here! */
 
@@ -54,42 +54,42 @@ static DEFINE_MUTEX(ov7251_lock);
 	#define dev_dbg dev_err
 #endif
 
-#define OV7251_VOLTAGE_ANALOG               2800000
-#define OV7251_VOLTAGE_DIGITAL_CORE         1500000
-#define OV7251_VOLTAGE_DIGITAL_IO           1800000
+#define IMX185_VOLTAGE_ANALOG               2800000
+#define IMX185_VOLTAGE_DIGITAL_CORE         1500000
+#define IMX185_VOLTAGE_DIGITAL_IO           1800000
 
 
-#define OV7251_SYSTEM_CTRL0		0x3000
-#define	OV7251_SYSTEM_CTRL0_START	0x00
-#define OV7251_SYSTEM_CTRL0_STOP 0x01 //Standby
+#define IMX185_SYSTEM_CTRL0		0x3000
+#define	IMX185_SYSTEM_CTRL0_START	0x00
+#define IMX185_SYSTEM_CTRL0_STOP 0x01 //Standby
 
-#define OV7251_CHIP_ID_HIGH		0x3384
-#define		OV7251_CHIP_ID_HIGH_BYTE	0x85
-#define OV7251_CHIP_ID_LOW		0x3385
-#define		OV7251_CHIP_ID_LOW_BYTE		0x01
+#define IMX185_CHIP_ID_HIGH		0x3384
+#define		IMX185_CHIP_ID_HIGH_BYTE	0x85
+#define IMX185_CHIP_ID_LOW		0x3385
+#define		IMX185_CHIP_ID_LOW_BYTE		0x01
 
 
-#define OV7251_AWB_MANUAL_CONTROL	0x3406
-#define		OV7251_AWB_MANUAL_ENABLE	BIT(0)
-#define OV7251_AEC_PK_MANUAL		0x3503
-#define		OV7251_AEC_MANUAL_ENABLE	BIT(0)
-#define		OV7251_AGC_MANUAL_ENABLE	BIT(1)
-#define OV7251_TIMING_TC_REG20		0x3820
-#define		OV7251_SENSOR_VFLIP		BIT(1)
-#define		OV7251_ISP_VFLIP		BIT(2)
-#define OV7251_TIMING_TC_REG21		0x3821
-#define		OV7251_SENSOR_MIRROR		BIT(1)
-#define OV7251_PRE_ISP_TEST_SETTING_1	0x503d
-#define		OV7251_TEST_PATTERN_MASK	0x3
-#define		OV7251_SET_TEST_PATTERN(x)	((x) & OV7251_TEST_PATTERN_MASK)
-#define		OV7251_TEST_PATTERN_ENABLE	BIT(7)
-#define OV7251_SDE_SAT_U		0x5583
-#define OV7251_SDE_SAT_V		0x5584
+#define IMX185_AWB_MANUAL_CONTROL	0x3406
+#define		IMX185_AWB_MANUAL_ENABLE	BIT(0)
+#define IMX185_AEC_PK_MANUAL		0x3503
+#define		IMX185_AEC_MANUAL_ENABLE	BIT(0)
+#define		IMX185_AGC_MANUAL_ENABLE	BIT(1)
+#define IMX185_TIMING_TC_REG20		0x3820
+#define		IMX185_SENSOR_VFLIP		BIT(1)
+#define		IMX185_ISP_VFLIP		BIT(2)
+#define IMX185_TIMING_TC_REG21		0x3821
+#define		IMX185_SENSOR_MIRROR		BIT(1)
+#define IMX185_PRE_ISP_TEST_SETTING_1	0x503d
+#define		IMX185_TEST_PATTERN_MASK	0x3
+#define		IMX185_SET_TEST_PATTERN(x)	((x) & IMX185_TEST_PATTERN_MASK)
+#define		IMX185_TEST_PATTERN_ENABLE	BIT(7)
+#define IMX185_SDE_SAT_U		0x5583
+#define IMX185_SDE_SAT_V		0x5584
 
-enum ov7251_mode {
-	OV7251_MODE_MIN = 0,
-	OV7251_MODE_1080P = 0,
-	OV7251_MODE_MAX = 0
+enum imx185_mode {
+	IMX185_MODE_MIN = 0,
+	IMX185_MODE_1080P = 0,
+	IMX185_MODE_MAX = 0
 };
 
 struct reg_value {
@@ -97,15 +97,15 @@ struct reg_value {
 	u8 val;
 };
 
-struct ov7251_mode_info {
-	enum ov7251_mode mode;
+struct imx185_mode_info {
+	enum imx185_mode mode;
 	u32 width;
 	u32 height;
 	struct reg_value *data;
 	u32 data_size;
 };
 
-struct ov7251 {
+struct imx185 {
 	struct i2c_client *i2c_client;
 	struct device *dev;
 	struct v4l2_subdev sd;
@@ -121,7 +121,7 @@ struct ov7251 {
 	struct regulator *core_regulator;
 	struct regulator *analog_regulator;
 
-	enum ov7251_mode current_mode;
+	enum imx185_mode current_mode;
 
 	/* Cached control values */
 	struct v4l2_ctrl_handler ctrls;
@@ -142,12 +142,12 @@ struct ov7251 {
 	struct v4l2_subdev *cci;
 };
 
-static inline struct ov7251 *to_ov7251(struct v4l2_subdev *sd)
+static inline struct imx185 *to_imx185(struct v4l2_subdev *sd)
 {
-	return container_of(sd, struct ov7251, sd);
+	return container_of(sd, struct imx185, sd);
 }
 
-static struct reg_value ov7251_global_init_setting[] = {
+static struct reg_value imx185_global_init_setting[] = {
 	{ 0x3103, 0x11 },
 	{ 0x3008, 0x82 },
 	{ 0x3008, 0x42 },
@@ -388,7 +388,7 @@ static struct reg_value ov7251_global_init_setting[] = {
 };
 
 
-static struct reg_value ov7251_setting_1080p[] = {
+static struct reg_value imx185_setting_1080p[] = {
 
 	{0x3002, 0x01},
 	{0x3005, 0x00},/*10BIT*/
@@ -562,102 +562,102 @@ static struct reg_value ov7251_setting_1080p[] = {
 };
 
 
-static struct ov7251_mode_info ov7251_mode_info_data[OV7251_MODE_MAX + 1] = {
+static struct imx185_mode_info imx185_mode_info_data[IMX185_MODE_MAX + 1] = {
 	{
-		.mode = OV7251_MODE_1080P,
+		.mode = IMX185_MODE_1080P,
 		.width = 1920,
 		.height = 1080,
-		.data = ov7251_setting_1080p,
-		.data_size = ARRAY_SIZE(ov7251_setting_1080p)
+		.data = imx185_setting_1080p,
+		.data_size = ARRAY_SIZE(imx185_setting_1080p)
 	},
 
 };
 
-static int ov7251_regulators_enable(struct ov7251 *ov7251)
+static int imx185_regulators_enable(struct imx185 *imx185)
 {
 	int ret;
 
-	ret = regulator_enable(ov7251->io_regulator);
+	ret = regulator_enable(imx185->io_regulator);
 	if (ret < 0) {
-		dev_err(ov7251->dev, "set io voltage failed\n");
+		dev_err(imx185->dev, "set io voltage failed\n");
 		return ret;
 	}
 
-	ret = regulator_enable(ov7251->core_regulator);
+	ret = regulator_enable(imx185->core_regulator);
 	if (ret) {
-		dev_err(ov7251->dev, "set core voltage failed\n");
+		dev_err(imx185->dev, "set core voltage failed\n");
 		goto err_disable_io;
 	}
 
-	ret = regulator_enable(ov7251->analog_regulator);
+	ret = regulator_enable(imx185->analog_regulator);
 	if (ret) {
-		dev_err(ov7251->dev, "set analog voltage failed\n");
+		dev_err(imx185->dev, "set analog voltage failed\n");
 		goto err_disable_core;
 	}
 
 	return 0;
 
 err_disable_core:
-	regulator_disable(ov7251->core_regulator);
+	regulator_disable(imx185->core_regulator);
 err_disable_io:
-	regulator_disable(ov7251->io_regulator);
+	regulator_disable(imx185->io_regulator);
 
 	return ret;
 }
 
-static void ov7251_regulators_disable(struct ov7251 *ov7251)
+static void imx185_regulators_disable(struct imx185 *imx185)
 {
 	int ret;
 
-	ret = regulator_disable(ov7251->analog_regulator);
+	ret = regulator_disable(imx185->analog_regulator);
 	if (ret < 0)
-		dev_err(ov7251->dev, "analog regulator disable failed\n");
+		dev_err(imx185->dev, "analog regulator disable failed\n");
 
-	ret = regulator_disable(ov7251->core_regulator);
+	ret = regulator_disable(imx185->core_regulator);
 	if (ret < 0)
-		dev_err(ov7251->dev, "core regulator disable failed\n");
+		dev_err(imx185->dev, "core regulator disable failed\n");
 
-	ret = regulator_disable(ov7251->io_regulator);
+	ret = regulator_disable(imx185->io_regulator);
 	if (ret < 0)
-		dev_err(ov7251->dev, "io regulator disable failed\n");
+		dev_err(imx185->dev, "io regulator disable failed\n");
 }
 
-static int ov7251_write_reg_to(struct ov7251 *ov7251, u16 reg, u8 val, u16 i2c_addr)
+static int imx185_write_reg_to(struct imx185 *imx185, u16 reg, u8 val, u16 i2c_addr)
 {
 	int ret;
 
 	ret = msm_cci_ctrl_write(i2c_addr, reg, &val, 1);
 	if (ret < 0)
-		dev_err(ov7251->dev,
+		dev_err(imx185->dev,
 			"%s: write reg error %d on addr 0x%x: reg=0x%x, val=0x%x\n",
 			__func__, ret, i2c_addr, reg, val);
 
 	return ret;
 }
 
-static int ov7251_write_reg(struct ov7251 *ov7251, u16 reg, u8 val)
+static int imx185_write_reg(struct imx185 *imx185, u16 reg, u8 val)
 {
 	int ret;
 	u16 i2c_addr = 0x34;
 
 	ret = msm_cci_ctrl_write(i2c_addr, reg, &val, 1);
 	if (ret < 0)
-		dev_err(ov7251->dev,
+		dev_err(imx185->dev,
 			"%s: write reg error %d on addr 0x%x: reg=0x%x, val=0x%x\n",
 			__func__, ret, i2c_addr, reg, val);
 
 	return ret;
 }
 
-static int ov7251_read_reg(struct ov7251 *ov7251, u16 reg, u8 *val)
+static int imx185_read_reg(struct imx185 *imx185, u16 reg, u8 *val)
 {
 	u8 tmpval;
 	int ret;
-	u16 i2c_addr = ov7251->i2c_client->addr;
+	u16 i2c_addr = imx185->i2c_client->addr;
 
 	ret = msm_cci_ctrl_read(i2c_addr, reg, &tmpval, 1);
 	if (ret < 0) {
-		dev_err(ov7251->dev,
+		dev_err(imx185->dev,
 			"%s: read reg error %d on addr 0x%x: reg=0x%x\n",
 			__func__, ret, i2c_addr, reg);
 		return ret;
@@ -668,41 +668,41 @@ static int ov7251_read_reg(struct ov7251 *ov7251, u16 reg, u8 *val)
 	return 0;
 }
 
-static int ov7251_set_aec_mode(struct ov7251 *ov7251, u32 mode)
+static int imx185_set_aec_mode(struct imx185 *imx185, u32 mode)
 {
 	u8 val;
 	int ret;
 
-	ret = ov7251_read_reg(ov7251, OV7251_AEC_PK_MANUAL, &val);
+	ret = imx185_read_reg(imx185, IMX185_AEC_PK_MANUAL, &val);
 	if (ret < 0)
 		return ret;
 
 	if (mode == V4L2_EXPOSURE_AUTO)
-		val &= ~OV7251_AEC_MANUAL_ENABLE;
+		val &= ~IMX185_AEC_MANUAL_ENABLE;
 	else /* V4L2_EXPOSURE_MANUAL */
-		val |= OV7251_AEC_MANUAL_ENABLE;
+		val |= IMX185_AEC_MANUAL_ENABLE;
 
-	return ov7251_write_reg(ov7251, OV7251_AEC_PK_MANUAL, val);
+	return imx185_write_reg(imx185, IMX185_AEC_PK_MANUAL, val);
 }
 
-static int ov7251_set_agc_mode(struct ov7251 *ov7251, u32 enable)
+static int imx185_set_agc_mode(struct imx185 *imx185, u32 enable)
 {
 	u8 val;
 	int ret;
 
-	ret = ov7251_read_reg(ov7251, OV7251_AEC_PK_MANUAL, &val);
+	ret = imx185_read_reg(imx185, IMX185_AEC_PK_MANUAL, &val);
 	if (ret < 0)
 		return ret;
 
 	if (enable)
-		val &= ~OV7251_AGC_MANUAL_ENABLE;
+		val &= ~IMX185_AGC_MANUAL_ENABLE;
 	else
-		val |= OV7251_AGC_MANUAL_ENABLE;
+		val |= IMX185_AGC_MANUAL_ENABLE;
 
-	return ov7251_write_reg(ov7251, OV7251_AEC_PK_MANUAL, val);
+	return imx185_write_reg(imx185, IMX185_AEC_PK_MANUAL, val);
 }
 
-static int ov7251_set_register_array(struct ov7251 *ov7251,
+static int imx185_set_register_array(struct imx185 *imx185,
 				     struct reg_value *settings,
 				     u32 num_settings)
 {
@@ -715,7 +715,7 @@ static int ov7251_set_register_array(struct ov7251 *ov7251,
 		reg = settings->reg;
 		val = settings->val;
 
-		ret = ov7251_write_reg(ov7251, reg, val);
+		ret = imx185_write_reg(imx185, reg, val);
 		if (ret < 0)
 			return ret;
 	}
@@ -723,71 +723,71 @@ static int ov7251_set_register_array(struct ov7251 *ov7251,
 	return 0;
 }
 
-static int ov7251_init(struct ov7251 *ov7251)
+static int imx185_init(struct imx185 *imx185)
 {
 	struct reg_value *settings;
 	u32 num_settings;
 
-	settings = ov7251_global_init_setting;
-	num_settings = ARRAY_SIZE(ov7251_global_init_setting);
+	settings = imx185_global_init_setting;
+	num_settings = ARRAY_SIZE(imx185_global_init_setting);
 
-	return ov7251_set_register_array(ov7251, settings, num_settings);
+	return imx185_set_register_array(imx185, settings, num_settings);
 }
 
-static int ov7251_change_mode(struct ov7251 *ov7251, enum ov7251_mode mode)
+static int imx185_change_mode(struct imx185 *imx185, enum imx185_mode mode)
 {
 	struct reg_value *settings;
 	u32 num_settings;
 
-	settings = ov7251_mode_info_data[mode].data;
-	num_settings = ov7251_mode_info_data[mode].data_size;
+	settings = imx185_mode_info_data[mode].data;
+	num_settings = imx185_mode_info_data[mode].data_size;
 
-	return ov7251_set_register_array(ov7251, settings, num_settings);
+	return imx185_set_register_array(imx185, settings, num_settings);
 }
 
-static int ov7251_set_power_on(struct ov7251 *ov7251)
+static int imx185_set_power_on(struct imx185 *imx185)
 {
 	int ret;
 
-	clk_set_rate(ov7251->xclk, ov7251->xclk_freq);
+	clk_set_rate(imx185->xclk, imx185->xclk_freq);
 
-	ret = clk_prepare_enable(ov7251->xclk);
+	ret = clk_prepare_enable(imx185->xclk);
 	if (ret < 0) {
-		dev_err(ov7251->dev, "clk prepare enable failed\n");
+		dev_err(imx185->dev, "clk prepare enable failed\n");
 		return ret;
 	}
 
-	ret = ov7251_regulators_enable(ov7251);
+	ret = imx185_regulators_enable(imx185);
 	if (ret < 0) {
-		clk_disable_unprepare(ov7251->xclk);
+		clk_disable_unprepare(imx185->xclk);
 		return ret;
 	}
 
 	usleep_range(5000, 15000);
-	gpiod_set_value_cansleep(ov7251->enable_gpio, 0);
+	gpiod_set_value_cansleep(imx185->enable_gpio, 0);
 
 	usleep_range(1000, 2000);
-	gpiod_set_value_cansleep(ov7251->rst_gpio, 0);
+	gpiod_set_value_cansleep(imx185->rst_gpio, 0);
 
 	msleep(20);
 
 	return ret;
 }
 
-static void ov7251_set_power_off(struct ov7251 *ov7251)
+static void imx185_set_power_off(struct imx185 *imx185)
 {
-	gpiod_set_value_cansleep(ov7251->rst_gpio, 1);
-	gpiod_set_value_cansleep(ov7251->enable_gpio, 1);
-	ov7251_regulators_disable(ov7251);
-	clk_disable_unprepare(ov7251->xclk);
+	gpiod_set_value_cansleep(imx185->rst_gpio, 0);//TO TEST
+	gpiod_set_value_cansleep(imx185->enable_gpio, 0);//
+	imx185_regulators_disable(imx185);
+	clk_disable_unprepare(imx185->xclk);
 }
 
-static int ov7251_s_power(struct v4l2_subdev *sd, int on)
+static int imx185_s_power(struct v4l2_subdev *sd, int on)
 {
-	struct ov7251 *ov7251 = to_ov7251(sd);
+	struct imx185 *imx185 = to_imx185(sd);
 	int ret = 0;
 
-	mutex_lock(&ov7251->power_lock);
+	mutex_lock(&imx185->power_lock);
 
 	if (on) {
 		ret = msm_cci_ctrl_init();
@@ -795,135 +795,135 @@ static int ov7251_s_power(struct v4l2_subdev *sd, int on)
 			goto exit;
 	}
 
-	if (ov7251->power == !on) {
+	if (imx185->power == !on) {
 		/* Power state changes. */
 		if (on) {
-			mutex_lock(&ov7251_lock);
+			mutex_lock(&imx185_lock);
 
-			ret = ov7251_set_power_on(ov7251);
+			ret = imx185_set_power_on(imx185);
 			if (ret < 0) {
-				dev_err(ov7251->dev, "could not set power %s\n",
+				dev_err(imx185->dev, "could not set power %s\n",
 					on ? "on" : "off");
 				goto exit;
 			}
 
 //don't change sensor i2c address for this time
 
-//			ret = ov7251_write_reg_to(ov7251, 0x0109,
-//					       ov7251->i2c_client->addr, 0xc0);
+//			ret = imx185_write_reg_to(imx185, 0x0109,
+//					       imx185->i2c_client->addr, 0xc0);
 
 
 			if (ret < 0) {
-				dev_err(ov7251->dev,
+				dev_err(imx185->dev,
 					"could not change i2c address\n");
-				ov7251_set_power_off(ov7251);
-				mutex_unlock(&ov7251_lock);
+				imx185_set_power_off(imx185);
+				mutex_unlock(&imx185_lock);
 				goto exit;
 			}
 
-			mutex_unlock(&ov7251_lock);
+			mutex_unlock(&imx185_lock);
 /*
-			ret = ov7251_init(ov7251);
+			ret = imx185_init(imx185);
 			if (ret < 0) {
-				dev_err(ov7251->dev,
+				dev_err(imx185->dev,
 					"could not set init registers\n");
-				ov7251_set_power_off(ov7251);
+				imx185_set_power_off(imx185);
 				goto exit;
 			}
 */
-			ret = ov7251_write_reg(ov7251, OV7251_SYSTEM_CTRL0,
-					       OV7251_SYSTEM_CTRL0_STOP);
+			ret = imx185_write_reg(imx185, IMX185_SYSTEM_CTRL0,
+					       IMX185_SYSTEM_CTRL0_STOP);
 			if (ret < 0) {
-				ov7251_set_power_off(ov7251);
+				imx185_set_power_off(imx185);
 				goto exit;
 			}
 		} else {
-			ov7251_set_power_off(ov7251);
+			imx185_set_power_off(imx185);
 		}
 
 		/* Update the power state. */
-		ov7251->power = on ? true : false;
+		imx185->power = on ? true : false;
 	}
 
 exit:
 	if (!on)
 		msm_cci_ctrl_release();
 
-	mutex_unlock(&ov7251->power_lock);
+	mutex_unlock(&imx185->power_lock);
 
 	return ret;
 }
 
 
-static int ov7251_set_saturation(struct ov7251 *ov7251, s32 value)
+static int imx185_set_saturation(struct imx185 *imx185, s32 value)
 {
 	u32 reg_value = (value * 0x10) + 0x40;
 	int ret;
 
-	ret = ov7251_write_reg(ov7251, OV7251_SDE_SAT_U, reg_value);
+	ret = imx185_write_reg(imx185, IMX185_SDE_SAT_U, reg_value);
 	if (ret < 0)
 		return ret;
 
-	ret = ov7251_write_reg(ov7251, OV7251_SDE_SAT_V, reg_value);
+	ret = imx185_write_reg(imx185, IMX185_SDE_SAT_V, reg_value);
 
 	return ret;
 }
 
-static int ov7251_set_hflip(struct ov7251 *ov7251, s32 value)
+static int imx185_set_hflip(struct imx185 *imx185, s32 value)
 {
 	u8 val;
 	int ret;
 
-	ret = ov7251_read_reg(ov7251, OV7251_TIMING_TC_REG21, &val);
+	ret = imx185_read_reg(imx185, IMX185_TIMING_TC_REG21, &val);
 	if (ret < 0)
 		return ret;
 
 	if (value == 0)
-		val &= ~(OV7251_SENSOR_MIRROR);
+		val &= ~(IMX185_SENSOR_MIRROR);
 	else
-		val |= (OV7251_SENSOR_MIRROR);
+		val |= (IMX185_SENSOR_MIRROR);
 
-	return ov7251_write_reg(ov7251, OV7251_TIMING_TC_REG21, val);
+	return imx185_write_reg(imx185, IMX185_TIMING_TC_REG21, val);
 }
 
-static int ov7251_set_vflip(struct ov7251 *ov7251, s32 value)
+static int imx185_set_vflip(struct imx185 *imx185, s32 value)
 {
 	u8 val;
 	int ret;
 
-	ret = ov7251_read_reg(ov7251, OV7251_TIMING_TC_REG20, &val);
+	ret = imx185_read_reg(imx185, IMX185_TIMING_TC_REG20, &val);
 	if (ret < 0)
 		return ret;
 
 	if (value == 0)
-		val |= (OV7251_SENSOR_VFLIP | OV7251_ISP_VFLIP);
+		val |= (IMX185_SENSOR_VFLIP | IMX185_ISP_VFLIP);
 	else
-		val &= ~(OV7251_SENSOR_VFLIP | OV7251_ISP_VFLIP);
+		val &= ~(IMX185_SENSOR_VFLIP | IMX185_ISP_VFLIP);
 
-	return ov7251_write_reg(ov7251, OV7251_TIMING_TC_REG20, val);
+	return imx185_write_reg(imx185, IMX185_TIMING_TC_REG20, val);
 }
 
-static int ov7251_set_test_pattern(struct ov7251 *ov7251, s32 value)
+static int imx185_set_test_pattern(struct imx185 *imx185, s32 value)
 {
 	u8 val;
 	int ret;
 
-	ret = ov7251_read_reg(ov7251, OV7251_PRE_ISP_TEST_SETTING_1, &val);
+	ret = imx185_read_reg(imx185, IMX185_PRE_ISP_TEST_SETTING_1, &val);
 	if (ret < 0)
 		return ret;
 
 	if (value) {
-		val &= ~OV7251_SET_TEST_PATTERN(OV7251_TEST_PATTERN_MASK);
-		val |= OV7251_SET_TEST_PATTERN(value - 1);
-		val |= OV7251_TEST_PATTERN_ENABLE;
+		val &= ~IMX185_SET_TEST_PATTERN(IMX185_TEST_PATTERN_MASK);
+		val |= IMX185_SET_TEST_PATTERN(value - 1);
+		val |= IMX185_TEST_PATTERN_ENABLE;
 	} else {
-		val &= ~OV7251_TEST_PATTERN_ENABLE;
+		val &= ~IMX185_TEST_PATTERN_ENABLE;
 	}
 
-	return ov7251_write_reg(ov7251, OV7251_PRE_ISP_TEST_SETTING_1, val);
+	return imx185_write_reg(imx185, IMX185_PRE_ISP_TEST_SETTING_1, val);
 }
 
-static const char * const ov7251_test_pattern_menu[] = {
+static const char * const imx185_test_pattern_menu[] = {
 	"Disabled",
 	"Vertical Color Bars",
 	"Pseudo-Random Data",
@@ -931,77 +931,77 @@ static const char * const ov7251_test_pattern_menu[] = {
 	"Black Image",
 };
 
-static int ov7251_set_awb(struct ov7251 *ov7251, s32 enable_auto)
+static int imx185_set_awb(struct imx185 *imx185, s32 enable_auto)
 {
 	u8 val;
 	int ret;
 
-	ret = ov7251_read_reg(ov7251, OV7251_AWB_MANUAL_CONTROL, &val);
+	ret = imx185_read_reg(imx185, IMX185_AWB_MANUAL_CONTROL, &val);
 	if (ret < 0)
 		return ret;
 
 	if (enable_auto)
-		val &= ~OV7251_AWB_MANUAL_ENABLE;
+		val &= ~IMX185_AWB_MANUAL_ENABLE;
 	else
-		val |= OV7251_AWB_MANUAL_ENABLE;
+		val |= IMX185_AWB_MANUAL_ENABLE;
 
-	return ov7251_write_reg(ov7251, OV7251_AWB_MANUAL_CONTROL, val);
+	return imx185_write_reg(imx185, IMX185_AWB_MANUAL_CONTROL, val);
 }
 
-static int ov7251_s_ctrl(struct v4l2_ctrl *ctrl)
+static int imx185_s_ctrl(struct v4l2_ctrl *ctrl)
 {
-	struct ov7251 *ov7251 = container_of(ctrl->handler,
-					     struct ov7251, ctrls);
+	struct imx185 *imx185 = container_of(ctrl->handler,
+					     struct imx185, ctrls);
 
 	int ret = -EINVAL;
 
 	return 0;	
-	mutex_lock(&ov7251->power_lock);
-	if (ov7251->power == 0) {
-		mutex_unlock(&ov7251->power_lock);
+	mutex_lock(&imx185->power_lock);
+	if (imx185->power == 0) {
+		mutex_unlock(&imx185->power_lock);
 		return 0;
 	}
 
 	switch (ctrl->id) {
 	case V4L2_CID_SATURATION:
-		ret = ov7251_set_saturation(ov7251, ctrl->val);
+		ret = imx185_set_saturation(imx185, ctrl->val);
 		break;
 	case V4L2_CID_AUTO_WHITE_BALANCE:
-		ret = ov7251_set_awb(ov7251, ctrl->val);
+		ret = imx185_set_awb(imx185, ctrl->val);
 		break;
 	case V4L2_CID_AUTOGAIN:
-		ret = ov7251_set_agc_mode(ov7251, ctrl->val);
+		ret = imx185_set_agc_mode(imx185, ctrl->val);
 		break;
 	case V4L2_CID_EXPOSURE_AUTO:
-		ret = ov7251_set_aec_mode(ov7251, ctrl->val);
+		ret = imx185_set_aec_mode(imx185, ctrl->val);
 		break;
 	case V4L2_CID_TEST_PATTERN:
-		ret = ov7251_set_test_pattern(ov7251, ctrl->val);
+		ret = imx185_set_test_pattern(imx185, ctrl->val);
 		break;
 	case V4L2_CID_HFLIP:
-		ret = ov7251_set_hflip(ov7251, ctrl->val);
+		ret = imx185_set_hflip(imx185, ctrl->val);
 		break;
 	case V4L2_CID_VFLIP:
-		ret = ov7251_set_vflip(ov7251, ctrl->val);
+		ret = imx185_set_vflip(imx185, ctrl->val);
 		break;
 	}
 
-	mutex_unlock(&ov7251->power_lock);
+	mutex_unlock(&imx185->power_lock);
 
 	return ret;
 }
 
-static struct v4l2_ctrl_ops ov7251_ctrl_ops = {
-	.s_ctrl = ov7251_s_ctrl,
+static struct v4l2_ctrl_ops imx185_ctrl_ops = {
+	.s_ctrl = imx185_s_ctrl,
 };
 
-static int ov7251_entity_init_cfg(struct v4l2_subdev *subdev,
+static int imx185_entity_init_cfg(struct v4l2_subdev *subdev,
 				  struct v4l2_subdev_pad_config *cfg)
 {
 	struct v4l2_subdev_format fmt = { 0 };
-	struct ov7251 *ov7251 = to_ov7251(subdev);
+	struct imx185 *imx185 = to_imx185(subdev);
 
-	dev_err(ov7251->dev, "%s: Enter\n", __func__);
+	dev_err(imx185->dev, "%s: Enter\n", __func__);
 
 
 	fmt.which = cfg ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
@@ -1013,118 +1013,118 @@ static int ov7251_entity_init_cfg(struct v4l2_subdev *subdev,
 	return 0;
 }
 
-static int ov7251_enum_mbus_code(struct v4l2_subdev *sd,
+static int imx185_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct ov7251 *ov7251 = to_ov7251(sd);
+	struct imx185 *imx185 = to_imx185(sd);
 
 	if (code->index > 0)
 		return -EINVAL;
 
-	code->code = ov7251->fmt.code;
+	code->code = imx185->fmt.code;
 
 	return 0;
 }
 
-static int ov7251_enum_frame_size(struct v4l2_subdev *subdev,
+static int imx185_enum_frame_size(struct v4l2_subdev *subdev,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
-	if (fse->index > OV7251_MODE_MAX)
+	if (fse->index > IMX185_MODE_MAX)
 		return -EINVAL;
 
-	fse->min_width = ov7251_mode_info_data[fse->index].width;
-	fse->max_width = ov7251_mode_info_data[fse->index].width;
-	fse->min_height = ov7251_mode_info_data[fse->index].height;
-	fse->max_height = ov7251_mode_info_data[fse->index].height;
+	fse->min_width = imx185_mode_info_data[fse->index].width;
+	fse->max_width = imx185_mode_info_data[fse->index].width;
+	fse->min_height = imx185_mode_info_data[fse->index].height;
+	fse->max_height = imx185_mode_info_data[fse->index].height;
 
 	return 0;
 }
 
 static struct v4l2_mbus_framefmt *
-__ov7251_get_pad_format(struct ov7251 *ov7251,
+__imx185_get_pad_format(struct imx185 *imx185,
 			struct v4l2_subdev_pad_config *cfg,
 			unsigned int pad,
 			enum v4l2_subdev_format_whence which)
 {
 	switch (which) {
 	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_format(&ov7251->sd, cfg, pad);
+		return v4l2_subdev_get_try_format(&imx185->sd, cfg, pad);
 	case V4L2_SUBDEV_FORMAT_ACTIVE:
-		return &ov7251->fmt;
+		return &imx185->fmt;
 	default:
 		return NULL;
 	}
 }
 
-static int ov7251_get_format(struct v4l2_subdev *sd,
+static int imx185_get_format(struct v4l2_subdev *sd,
 			     struct v4l2_subdev_pad_config *cfg,
 			     struct v4l2_subdev_format *format)
 {
-	struct ov7251 *ov7251 = to_ov7251(sd);
+	struct imx185 *imx185 = to_imx185(sd);
 
-	format->format = *__ov7251_get_pad_format(ov7251, cfg, format->pad,
+	format->format = *__imx185_get_pad_format(imx185, cfg, format->pad,
 						  format->which);
 	return 0;
 }
 
 static struct v4l2_rect *
-__ov7251_get_pad_crop(struct ov7251 *ov7251, struct v4l2_subdev_pad_config *cfg,
+__imx185_get_pad_crop(struct imx185 *imx185, struct v4l2_subdev_pad_config *cfg,
 		      unsigned int pad, enum v4l2_subdev_format_whence which)
 {
 	switch (which) {
 	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_crop(&ov7251->sd, cfg, pad);
+		return v4l2_subdev_get_try_crop(&imx185->sd, cfg, pad);
 	case V4L2_SUBDEV_FORMAT_ACTIVE:
-		return &ov7251->crop;
+		return &imx185->crop;
 	default:
 		return NULL;
 	}
 }
 
-static enum ov7251_mode ov7251_find_nearest_mode(struct ov7251 *ov7251,
+static enum imx185_mode imx185_find_nearest_mode(struct imx185 *imx185,
 						 int width, int height)
 {
 	int i;
 
-	for (i = OV7251_MODE_MAX; i >= 0; i--) {
-		if (ov7251_mode_info_data[i].width <= width &&
-		    ov7251_mode_info_data[i].height <= height)
+	for (i = IMX185_MODE_MAX; i >= 0; i--) {
+		if (imx185_mode_info_data[i].width <= width &&
+		    imx185_mode_info_data[i].height <= height)
 			break;
 	}
 
 	if (i < 0)
 		i = 0;
 
-	return (enum ov7251_mode)i;
+	return (enum imx185_mode)i;
 }
 
-static int ov7251_set_format(struct v4l2_subdev *sd,
+static int imx185_set_format(struct v4l2_subdev *sd,
 			     struct v4l2_subdev_pad_config *cfg,
 			     struct v4l2_subdev_format *format)
 {
-	struct ov7251 *ov7251 = to_ov7251(sd);
+	struct imx185 *imx185 = to_imx185(sd);
 	struct v4l2_mbus_framefmt *__format;
 	struct v4l2_rect *__crop;
-	enum ov7251_mode new_mode;
+	enum imx185_mode new_mode;
 
-	__crop = __ov7251_get_pad_crop(ov7251, cfg, format->pad,
+	__crop = __imx185_get_pad_crop(imx185, cfg, format->pad,
 			format->which);
 
-	new_mode = ov7251_find_nearest_mode(ov7251,
+	new_mode = imx185_find_nearest_mode(imx185,
 			format->format.width, format->format.height);
 	
 	//printk("set format,new mode index:%d",new_mode);
 
 	
-	__crop->width = ov7251_mode_info_data[new_mode].width;
-	__crop->height = ov7251_mode_info_data[new_mode].height;
+	__crop->width = imx185_mode_info_data[new_mode].width;
+	__crop->height = imx185_mode_info_data[new_mode].height;
 
 	if (format->which == V4L2_SUBDEV_FORMAT_ACTIVE)
-		ov7251->current_mode = new_mode;
+		imx185->current_mode = new_mode;
 
-	__format = __ov7251_get_pad_format(ov7251, cfg, format->pad,
+	__format = __imx185_get_pad_format(imx185, cfg, format->pad,
 			format->which);
 	__format->width = __crop->width;
 	__format->height = __crop->height;
@@ -1137,53 +1137,53 @@ static int ov7251_set_format(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int ov7251_get_selection(struct v4l2_subdev *sd,
+static int imx185_get_selection(struct v4l2_subdev *sd,
 			   struct v4l2_subdev_pad_config *cfg,
 			   struct v4l2_subdev_selection *sel)
 {
-	struct ov7251 *ov7251 = to_ov7251(sd);
+	struct imx185 *imx185 = to_imx185(sd);
 
 	if (sel->target != V4L2_SEL_TGT_CROP)
 		return -EINVAL;
 
-	sel->r = *__ov7251_get_pad_crop(ov7251, cfg, sel->pad,
+	sel->r = *__imx185_get_pad_crop(imx185, cfg, sel->pad,
 					sel->which);
 	return 0;
 }
 
-static int ov7251_s_stream(struct v4l2_subdev *subdev, int enable)
+static int imx185_s_stream(struct v4l2_subdev *subdev, int enable)
 {
-	struct ov7251 *ov7251 = to_ov7251(subdev);
+	struct imx185 *imx185 = to_imx185(subdev);
 	int ret;
 
 	if (enable) {
-		ret = ov7251_change_mode(ov7251, ov7251->current_mode);//Do the non-match test
+		ret = imx185_change_mode(imx185, imx185->current_mode);//Do the non-match test
 		if (ret < 0) {
-			dev_err(ov7251->dev, "could not set mode %d\n",
-				ov7251->current_mode);
+			dev_err(imx185->dev, "could not set mode %d\n",
+				imx185->current_mode);
 			return ret;
 		}else
 			{
-			printk("new mode index:%d",ov7251->current_mode);
+			printk("new mode index:%d",imx185->current_mode);
 		}
 
 /*		
-		ret = v4l2_ctrl_handler_setup(&ov7251->ctrls);
+		ret = v4l2_ctrl_handler_setup(&imx185->ctrls);
 		if (ret < 0) {
-			dev_err(ov7251->dev, "could not sync v4l2 controls\n");
+			dev_err(imx185->dev, "could not sync v4l2 controls\n");
 			return ret;
 		}
-//		ret = ov7251_write_reg(ov7251, OV7251_SYSTEM_CTRL0,
-//				       OV7251_SYSTEM_CTRL0_START);
+//		ret = imx185_write_reg(imx185, IMX185_SYSTEM_CTRL0,
+//				       IMX185_SYSTEM_CTRL0_START);
 */
-		ret = ov7251_write_reg(ov7251, OV7251_SYSTEM_CTRL0,
-				       OV7251_SYSTEM_CTRL0_START);
+		ret = imx185_write_reg(imx185, IMX185_SYSTEM_CTRL0,
+				       IMX185_SYSTEM_CTRL0_START);
 
 		if (ret < 0)
 			return ret;
 	} else {
-		ret = ov7251_write_reg(ov7251, OV7251_SYSTEM_CTRL0,
-				       OV7251_SYSTEM_CTRL0_STOP);
+		ret = imx185_write_reg(imx185, IMX185_SYSTEM_CTRL0,
+				       IMX185_SYSTEM_CTRL0_STOP);
 		if (ret < 0)
 			return ret;
 	}
@@ -1191,37 +1191,37 @@ static int ov7251_s_stream(struct v4l2_subdev *subdev, int enable)
 	return 0;
 }
 
-static struct v4l2_subdev_core_ops ov7251_core_ops = {
-	.s_power = ov7251_s_power,
+static struct v4l2_subdev_core_ops imx185_core_ops = {
+	.s_power = imx185_s_power,
 };
 
-static struct v4l2_subdev_video_ops ov7251_video_ops = {
-	.s_stream = ov7251_s_stream,
+static struct v4l2_subdev_video_ops imx185_video_ops = {
+	.s_stream = imx185_s_stream,
 };
 
-static struct v4l2_subdev_pad_ops ov7251_subdev_pad_ops = {
-	.enum_mbus_code = ov7251_enum_mbus_code,
-	.enum_frame_size = ov7251_enum_frame_size,
-	.get_fmt = ov7251_get_format,
-	.set_fmt = ov7251_set_format,
-	.get_selection = ov7251_get_selection,
+static struct v4l2_subdev_pad_ops imx185_subdev_pad_ops = {
+	.enum_mbus_code = imx185_enum_mbus_code,
+	.enum_frame_size = imx185_enum_frame_size,
+	.get_fmt = imx185_get_format,
+	.set_fmt = imx185_set_format,
+	.get_selection = imx185_get_selection,
 };
 
-static struct v4l2_subdev_ops ov7251_subdev_ops = {
-	.core = &ov7251_core_ops,
-	.video = &ov7251_video_ops,
-	.pad = &ov7251_subdev_pad_ops,
+static struct v4l2_subdev_ops imx185_subdev_ops = {
+	.core = &imx185_core_ops,
+	.video = &imx185_video_ops,
+	.pad = &imx185_subdev_pad_ops,
 };
 
-static const struct v4l2_subdev_internal_ops ov7251_subdev_internal_ops = {
+static const struct v4l2_subdev_internal_ops imx185_subdev_internal_ops = {
 };
 
-static int ov7251_probe(struct i2c_client *client,
+static int imx185_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
 	struct device *dev = &client->dev;
 	struct device_node *endpoint;
-	struct ov7251 *ov7251;
+	struct imx185 *imx185;
 	u8 chip_id_high, chip_id_low;
 	int ret;
 
@@ -1229,12 +1229,12 @@ static int ov7251_probe(struct i2c_client *client,
 
 	client->addr = 0x34;
 	
-	ov7251 = devm_kzalloc(dev, sizeof(struct ov7251), GFP_KERNEL);
-	if (!ov7251)
+	imx185 = devm_kzalloc(dev, sizeof(struct imx185), GFP_KERNEL);
+	if (!imx185)
 		return -ENOMEM;
 
-	ov7251->i2c_client = client;
-	ov7251->dev = dev;
+	imx185->i2c_client = client;
+	imx185->dev = dev;
 
 	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
 	if (!endpoint) {
@@ -1242,12 +1242,12 @@ static int ov7251_probe(struct i2c_client *client,
 		return -EINVAL;
 	}
 
-	ret = v4l2_of_parse_endpoint(endpoint, &ov7251->ep);
+	ret = v4l2_of_parse_endpoint(endpoint, &imx185->ep);
 	if (ret < 0) {
 		dev_err(dev, "parsing endpoint node failed\n");
 		return ret;
 	}
-	if (ov7251->ep.bus_type != V4L2_MBUS_CSI2) {
+	if (imx185->ep.bus_type != V4L2_MBUS_CSI2) {
 		dev_err(dev, "invalid bus type, must be CSI2\n");
 		of_node_put(endpoint);
 		return -EINVAL;
@@ -1255,135 +1255,135 @@ static int ov7251_probe(struct i2c_client *client,
 	of_node_put(endpoint);
 
 	/* get system clock (xclk) */
-	ov7251->xclk = devm_clk_get(dev, "xclk");
-	if (IS_ERR(ov7251->xclk)) {
+	imx185->xclk = devm_clk_get(dev, "xclk");
+	if (IS_ERR(imx185->xclk)) {
 		dev_err(dev, "could not get xclk");
-		return PTR_ERR(ov7251->xclk);
+		return PTR_ERR(imx185->xclk);
 	}
 
 	ret = of_property_read_u32(dev->of_node, "clock-frequency",
-				    &ov7251->xclk_freq);
+				    &imx185->xclk_freq);
 	if (ret) {
 		dev_err(dev, "could not get xclk frequency\n");
 		return ret;
 	}
 
-	ov7251->io_regulator = devm_regulator_get(dev, "vdddo");
-	if (IS_ERR(ov7251->io_regulator)) {
+	imx185->io_regulator = devm_regulator_get(dev, "vdddo");
+	if (IS_ERR(imx185->io_regulator)) {
 		dev_err(dev, "cannot get io regulator\n");
-		return PTR_ERR(ov7251->io_regulator);
+		return PTR_ERR(imx185->io_regulator);
 	}
 
-	ret = regulator_set_voltage(ov7251->io_regulator,
-				    OV7251_VOLTAGE_DIGITAL_IO,
-				    OV7251_VOLTAGE_DIGITAL_IO);
+	ret = regulator_set_voltage(imx185->io_regulator,
+				    IMX185_VOLTAGE_DIGITAL_IO,
+				    IMX185_VOLTAGE_DIGITAL_IO);
 	if (ret < 0) {
 		dev_err(dev, "cannot set io voltage\n");
 		return ret;
 	}
 
-	ov7251->core_regulator = devm_regulator_get(dev, "vddd");
-	if (IS_ERR(ov7251->core_regulator)) {
+	imx185->core_regulator = devm_regulator_get(dev, "vddd");
+	if (IS_ERR(imx185->core_regulator)) {
 		dev_err(dev, "cannot get core regulator\n");
-		return PTR_ERR(ov7251->core_regulator);
+		return PTR_ERR(imx185->core_regulator);
 	}
 
-	ret = regulator_set_voltage(ov7251->core_regulator,
-				    OV7251_VOLTAGE_DIGITAL_CORE,
-				    OV7251_VOLTAGE_DIGITAL_CORE);
+	ret = regulator_set_voltage(imx185->core_regulator,
+				    IMX185_VOLTAGE_DIGITAL_CORE,
+				    IMX185_VOLTAGE_DIGITAL_CORE);
 	if (ret < 0) {
 		dev_err(dev, "cannot set core voltage\n");
 		return ret;
 	}
 
-	ov7251->analog_regulator = devm_regulator_get(dev, "vdda");
-	if (IS_ERR(ov7251->analog_regulator)) {
+	imx185->analog_regulator = devm_regulator_get(dev, "vdda");
+	if (IS_ERR(imx185->analog_regulator)) {
 		dev_err(dev, "cannot get analog regulator\n");
-		return PTR_ERR(ov7251->analog_regulator);
+		return PTR_ERR(imx185->analog_regulator);
 	}
 
-	ret = regulator_set_voltage(ov7251->analog_regulator,
-				    OV7251_VOLTAGE_ANALOG,
-				    OV7251_VOLTAGE_ANALOG);
+	ret = regulator_set_voltage(imx185->analog_regulator,
+				    IMX185_VOLTAGE_ANALOG,
+				    IMX185_VOLTAGE_ANALOG);
 	if (ret < 0) {
 		dev_err(dev, "cannot set analog voltage\n");
 		return ret;
 	}
 
-	ov7251->enable_gpio = devm_gpiod_get(dev, "enable", GPIOD_OUT_HIGH);
-	if (IS_ERR(ov7251->enable_gpio)) {
+	imx185->enable_gpio = devm_gpiod_get(dev, "enable", GPIOD_OUT_HIGH);
+	if (IS_ERR(imx185->enable_gpio)) {
 		dev_err(dev, "cannot get enable gpio\n");
-		return PTR_ERR(ov7251->enable_gpio);
+		return PTR_ERR(imx185->enable_gpio);
 	}
 
-	ov7251->rst_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ov7251->rst_gpio)) {
+	imx185->rst_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(imx185->rst_gpio)) {
 		dev_err(dev, "cannot get reset gpio\n");
-		return PTR_ERR(ov7251->rst_gpio);
+		return PTR_ERR(imx185->rst_gpio);
 	}
 
-	mutex_init(&ov7251->power_lock);
+	mutex_init(&imx185->power_lock);
 
-	v4l2_ctrl_handler_init(&ov7251->ctrls, 7);
-	ov7251->saturation = v4l2_ctrl_new_std(&ov7251->ctrls, &ov7251_ctrl_ops,
+	v4l2_ctrl_handler_init(&imx185->ctrls, 7);
+	imx185->saturation = v4l2_ctrl_new_std(&imx185->ctrls, &imx185_ctrl_ops,
 				V4L2_CID_SATURATION, -4, 4, 1, 0);
-	ov7251->hflip = v4l2_ctrl_new_std(&ov7251->ctrls, &ov7251_ctrl_ops,
+	imx185->hflip = v4l2_ctrl_new_std(&imx185->ctrls, &imx185_ctrl_ops,
 				V4L2_CID_HFLIP, 0, 1, 1, 0);
-	ov7251->vflip = v4l2_ctrl_new_std(&ov7251->ctrls, &ov7251_ctrl_ops,
+	imx185->vflip = v4l2_ctrl_new_std(&imx185->ctrls, &imx185_ctrl_ops,
 				V4L2_CID_VFLIP, 0, 1, 1, 0);
-	ov7251->autogain = v4l2_ctrl_new_std(&ov7251->ctrls, &ov7251_ctrl_ops,
+	imx185->autogain = v4l2_ctrl_new_std(&imx185->ctrls, &imx185_ctrl_ops,
 				V4L2_CID_AUTOGAIN, 0, 1, 1, 1);
-	ov7251->autoexposure = v4l2_ctrl_new_std_menu(&ov7251->ctrls,
-				&ov7251_ctrl_ops, V4L2_CID_EXPOSURE_AUTO,
+	imx185->autoexposure = v4l2_ctrl_new_std_menu(&imx185->ctrls,
+				&imx185_ctrl_ops, V4L2_CID_EXPOSURE_AUTO,
 				V4L2_EXPOSURE_MANUAL, 0, V4L2_EXPOSURE_AUTO);
-	ov7251->awb = v4l2_ctrl_new_std(&ov7251->ctrls, &ov7251_ctrl_ops,
+	imx185->awb = v4l2_ctrl_new_std(&imx185->ctrls, &imx185_ctrl_ops,
 				V4L2_CID_AUTO_WHITE_BALANCE, 0, 1, 1, 1);
-	ov7251->pattern = v4l2_ctrl_new_std_menu_items(&ov7251->ctrls,
-				&ov7251_ctrl_ops, V4L2_CID_TEST_PATTERN,
-				ARRAY_SIZE(ov7251_test_pattern_menu) - 1, 0, 0,
-				ov7251_test_pattern_menu);
+	imx185->pattern = v4l2_ctrl_new_std_menu_items(&imx185->ctrls,
+				&imx185_ctrl_ops, V4L2_CID_TEST_PATTERN,
+				ARRAY_SIZE(imx185_test_pattern_menu) - 1, 0, 0,
+				imx185_test_pattern_menu);
 
-	ov7251->sd.ctrl_handler = &ov7251->ctrls;
+	imx185->sd.ctrl_handler = &imx185->ctrls;
 
-	if (ov7251->ctrls.error) {
+	if (imx185->ctrls.error) {
 		dev_err(dev, "%s: control initialization error %d\n",
-		       __func__, ov7251->ctrls.error);
-		ret = ov7251->ctrls.error;
+		       __func__, imx185->ctrls.error);
+		ret = imx185->ctrls.error;
 		goto free_ctrl;
 	}
 
-	v4l2_i2c_subdev_init(&ov7251->sd, client, &ov7251_subdev_ops);
-	ov7251->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-	ov7251->pad.flags = MEDIA_PAD_FL_SOURCE;
-	ov7251->sd.internal_ops = &ov7251_subdev_internal_ops;
+	v4l2_i2c_subdev_init(&imx185->sd, client, &imx185_subdev_ops);
+	imx185->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	imx185->pad.flags = MEDIA_PAD_FL_SOURCE;
+	imx185->sd.internal_ops = &imx185_subdev_internal_ops;
 
-	ret = media_entity_init(&ov7251->sd.entity, 1, &ov7251->pad, 0);
+	ret = media_entity_init(&imx185->sd.entity, 1, &imx185->pad, 0);
 	if (ret < 0) {
 		dev_err(dev, "could not register media entity\n");
 		goto free_ctrl;
 	}
 
-	ov7251->sd.dev = &client->dev;
-	ret = v4l2_async_register_subdev(&ov7251->sd);
+	imx185->sd.dev = &client->dev;
+	ret = v4l2_async_register_subdev(&imx185->sd);
 	if (ret < 0) {
 		dev_err(dev, "could not register v4l2 device\n");
 		goto free_entity;
 	}
 
-	ret = ov7251_s_power(&ov7251->sd, true);
+	ret = imx185_s_power(&imx185->sd, true);
 	if (ret < 0) {
-		dev_err(dev, "could not power up OV7251\n");
+		dev_err(dev, "could not power up IMX185\n");
 		goto unregister_subdev;
 	}
 
-	ret = ov7251_read_reg(ov7251, OV7251_CHIP_ID_LOW, &chip_id_high);
-	if (ret < 0 || chip_id_high != OV7251_CHIP_ID_LOW_BYTE) {
+	ret = imx185_read_reg(imx185, IMX185_CHIP_ID_LOW, &chip_id_high);
+	if (ret < 0 || chip_id_high != IMX185_CHIP_ID_LOW_BYTE) {
 		dev_err(dev, "could not read ID high\n");
 		ret = -ENODEV;
 		goto power_down;
 	}
-	ret = ov7251_read_reg(ov7251, OV7251_CHIP_ID_HIGH, &chip_id_low);
-	if (ret < 0 || chip_id_low != OV7251_CHIP_ID_HIGH_BYTE) {
+	ret = imx185_read_reg(imx185, IMX185_CHIP_ID_HIGH, &chip_id_low);
+	if (ret < 0 || chip_id_low != IMX185_CHIP_ID_HIGH_BYTE) {
 		dev_err(dev, "could not read ID low\n");
 		ret = -ENODEV;
 		goto power_down;
@@ -1391,64 +1391,64 @@ static int ov7251_probe(struct i2c_client *client,
 
 	dev_info(dev, "Sony IMX185 detected at address 0x%x,ID:0x%x\n", client->addr,chip_id_high<<8|chip_id_low);
 
-	ov7251_s_power(&ov7251->sd, false);
+	imx185_s_power(&imx185->sd, false);
 
-	ov7251_entity_init_cfg(&ov7251->sd, NULL);
+	imx185_entity_init_cfg(&imx185->sd, NULL);
 
 	return 0;
 
 power_down:
-	ov7251_s_power(&ov7251->sd, false);
+	imx185_s_power(&imx185->sd, false);
 unregister_subdev:
-	v4l2_async_unregister_subdev(&ov7251->sd);
+	v4l2_async_unregister_subdev(&imx185->sd);
 free_entity:
-	media_entity_cleanup(&ov7251->sd.entity);
+	media_entity_cleanup(&imx185->sd.entity);
 free_ctrl:
-	v4l2_ctrl_handler_free(&ov7251->ctrls);
-	mutex_destroy(&ov7251->power_lock);
+	v4l2_ctrl_handler_free(&imx185->ctrls);
+	mutex_destroy(&imx185->power_lock);
 
 	return ret;
 }
 
 
-static int ov7251_remove(struct i2c_client *client)
+static int imx185_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov7251 *ov7251 = to_ov7251(sd);
+	struct imx185 *imx185 = to_imx185(sd);
 
-	v4l2_async_unregister_subdev(&ov7251->sd);
-	media_entity_cleanup(&ov7251->sd.entity);
-	v4l2_ctrl_handler_free(&ov7251->ctrls);
-	mutex_destroy(&ov7251->power_lock);
+	v4l2_async_unregister_subdev(&imx185->sd);
+	media_entity_cleanup(&imx185->sd.entity);
+	v4l2_ctrl_handler_free(&imx185->ctrls);
+	mutex_destroy(&imx185->power_lock);
 
 	return 0;
 }
 
 
-static const struct i2c_device_id ov7251_id[] = {
-	{ "ov7251", 0 },
+static const struct i2c_device_id imx185_id[] = {
+	{ "imx185", 0 },
 	{}
 };
-MODULE_DEVICE_TABLE(i2c, ov7251_id);
+MODULE_DEVICE_TABLE(i2c, imx185_id);
 
-static const struct of_device_id ov7251_of_match[] = {
-	{ .compatible = "ovti,ov7251" },
+static const struct of_device_id imx185_of_match[] = {
+	{ .compatible = "sony,imx185" },
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, ov7251_of_match);
+MODULE_DEVICE_TABLE(of, imx185_of_match);
 
-static struct i2c_driver ov7251_i2c_driver = {
+static struct i2c_driver imx185_i2c_driver = {
 	.driver = {
-		.of_match_table = of_match_ptr(ov7251_of_match),
-		.name  = "ov7251",
+		.of_match_table = of_match_ptr(imx185_of_match),
+		.name  = "imx185",
 	},
-	.probe  = ov7251_probe,
-	.remove = ov7251_remove,
-	.id_table = ov7251_id,
+	.probe  = imx185_probe,
+	.remove = imx185_remove,
+	.id_table = imx185_id,
 };
 
-module_i2c_driver(ov7251_i2c_driver);
+module_i2c_driver(imx185_i2c_driver);
 
-MODULE_DESCRIPTION("Omnivision OV7251 Camera Driver");
+MODULE_DESCRIPTION("Sony IMX185 Camera Driver");
 MODULE_AUTHOR("Todor Tomov <todor.tomov@linaro.org>");
 MODULE_LICENSE("GPL v2");
