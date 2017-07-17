@@ -502,6 +502,18 @@ config VIDEO_OV5645
 	  To compile this driver as a module, choose M here: the
 	  module will be called ov5645.
 
+config VIDEO_OV7251
+	tristate "OmniVision OV7251 sensor support"
+	depends on OF
+	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+	depends on MEDIA_CAMERA_SUPPORT
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the Sony
+	  IMX185 camera.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called ov7251.
+
 config VIDEO_IMX185
 	tristate "OmniVision IMX185 sensor support"
 	depends on OF
@@ -513,6 +525,18 @@ config VIDEO_IMX185
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called imx185.
+
+config VIDEO_MT9V024
+	tristate "Aptina MT9V024 sensor support"
+	depends on OF
+	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+	depends on MEDIA_CAMERA_SUPPORT
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the Sony
+	  IMX185 camera.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called mt9v024.
 
 config VIDEO_OV7640
 	tristate "OmniVision OV7640 sensor support"

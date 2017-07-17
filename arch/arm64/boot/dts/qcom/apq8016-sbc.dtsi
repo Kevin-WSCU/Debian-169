@@ -325,9 +325,9 @@
 			reg = <0>;
 			csiphy0_ep:endpoint {
 				clock-lanes = <1>;
-				data-lanes = <0 2 3 4>;
-				qcom,settle-cnt = <0x28>;
-				remote-endpoint = <&imx185_ep>;
+				data-lanes = <0>;
+				qcom,settle-cnt = <0x10>;
+				remote-endpoint = <&mt9v024_ep>;
 			};
 		};
 		port@1 {
@@ -432,9 +432,9 @@
 &blsp_i2c6 {
 	status = "ok";
 
-	camera_rear@34 {
-		compatible = "sony,imx185";
-		reg = <0x34>;
+	camera_rear@90 {
+		compatible = "aptina,mt9v024";
+		reg = <0x90>;
 
 		enable-gpios = <&msmgpio 34 0>;
 		reset-gpios = <&msmgpio 35 1>;
@@ -450,9 +450,9 @@
 		vddd-supply = <&camera_vddd_1v5>;
 
 		port {
-			imx185_ep: endpoint {
+			mt9v024_ep: endpoint {
 				clock-lanes = <1>;
-				data-lanes = <0 2 3 4>;
+				data-lanes = <0>;
 				remote-endpoint = <&csiphy0_ep>;
 			};
 		};
