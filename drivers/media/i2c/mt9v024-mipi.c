@@ -233,7 +233,7 @@ static int mt9v024_write_reg(struct mt9v024 *mt9v024, u8 reg, u16 val)
 {
 	int ret;
 
-	u16 i2c_addr = mt9v024->i2c_client->addr;
+	u16 i2c_addr = mt9v024->i2c_client->addr = 0x90;
 
 	ret = msm_cci_ctrl_write(i2c_addr, reg, &val, 1);
 	if (ret < 0)
@@ -248,7 +248,7 @@ static int mt9v024_read_reg(struct mt9v024 *mt9v024, u16 reg, u8 *val)
 {
 	u8 tmpval;
 	int ret;
-	u16 i2c_addr = mt9v024->i2c_client->addr;
+	u16 i2c_addr = mt9v024->i2c_client->addr = 0x90;
 
 	ret = msm_cci_ctrl_read(i2c_addr, reg, &tmpval, 1);
 	if (ret < 0) {
@@ -814,6 +814,8 @@ static int mt9v024_probe(struct i2c_client *client,
 	u16 chip_id;
 	int ret;
 
+	client->addr = 0x90;
+
 	dev_dbg(dev, "%s: Enter, i2c addr = 0x%x\n", __func__, client->addr);
 	
 	mt9v024 = devm_kzalloc(dev, sizeof(struct mt9v024), GFP_KERNEL);
@@ -965,7 +967,7 @@ static int mt9v024_probe(struct i2c_client *client,
 
 	ret = mt9v024_read_reg(mt9v024, MT9V024_CHIP_ID, &chip_id);
 	if (ret < 0 || chip_id != MT9V024_CHIP_ID_WORD) {
-		dev_err(dev, "could not read ID high\n");
+		dev_err(dev, "could not read ID high,%x\n",chip_id);
 		ret = -ENODEV;
 		goto power_down;
 	}
