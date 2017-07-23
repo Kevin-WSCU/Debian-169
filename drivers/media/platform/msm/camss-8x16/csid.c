@@ -225,6 +225,9 @@ static irqreturn_t csid_isr(int irq, void *dev)
 	u32 value;
 
 	value = readl_relaxed(csid->base + CAMSS_CSID_IRQ_STATUS);
+
+	dev_dbg(to_device_index(csid, csid->id)," csid%d status = 0x%x\n",csid->id,value);
+	
 	writel_relaxed(value, csid->base + CAMSS_CSID_IRQ_CLEAR_CMD);
 
 	if ((value >> 11) & 0x1)

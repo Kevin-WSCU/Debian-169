@@ -485,9 +485,7 @@ static int imx185_set_register_array(struct imx185 *imx185,
 
 static int imx185_init(struct imx185 *imx185)
 {
-
 	return 0; //No global initialization 
-	
 }
 
 static int imx185_change_mode(struct imx185 *imx185, enum imx185_mode mode)
