@@ -15,6 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+#define DEBUG
+
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
@@ -27,6 +29,8 @@
 
 #include "csiphy.h"
 #include "camss.h"
+
+
 
 #define MSM_CSIPHY_NAME "msm_csiphy"
 
@@ -83,6 +87,10 @@ static irqreturn_t csiphy_isr(int irq, void *dev)
 	for (i = 0; i < 8; i++) {
 		val[i] = readl_relaxed(csiphy->base +
 				       CAMSS_CSI_PHY_INTERRUPT_STATUSn(i));
+
+		dev_dbg(to_device_index(csiphy, csiphy->id)," csiphy%d status%d = %d\n",csiphy->id,i,val[i]);
+
+		
 		writel_relaxed(val[i], csiphy->base +
 			       CAMSS_CSI_PHY_INTERRUPT_CLEARn(i));
 		writel_relaxed(0x1, csiphy->base + CAMSS_CSI_PHY_GLBL_IRQ_CMD);
@@ -231,6 +239,20 @@ static int csiphy_get_lane_mask(struct csiphy_lanes_cfg *lane_cfg)
 	return lane_mask;
 }
 
+static void csiphy_status(struct csiphy_device *csiphy)
+{
+	u8 i;
+	u8 val[8];
+		
+	for (i = 0; i < 8; i++) {
+		val[i] = readl_relaxed(csiphy->base +
+				       CAMSS_CSI_PHY_INTERRUPT_STATUSn(i));
+		
+		dev_dbg(to_device_index(csiphy, csiphy->id)," csiphy%d status%d = %d\n",csiphy->id,i,val[i]);		
+	}
+
+}
+
 /*
  * csiphy_set_stream - Enable/disable streaming on CSIPHY module
  * @sd: CSIPHY V4L2 subdevice
@@ -298,6 +320,7 @@ static int csiphy_set_stream(struct v4l2_subdev *sd, int enable)
 			lane_mask >>= 1;
 		}
 	} else {
+		
 		i = 0;
 		while (lane_mask) {
 			if (lane_mask & 0x1) {

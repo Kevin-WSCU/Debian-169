@@ -485,13 +485,7 @@ static int imx185_set_register_array(struct imx185 *imx185,
 
 static int imx185_init(struct imx185 *imx185)
 {
-	struct reg_value *settings;
-	u32 num_settings;
-
-	settings = imx185_global_init_setting;
-	num_settings = ARRAY_SIZE(imx185_global_init_setting);
-
-	return imx185_set_register_array(imx185, settings, num_settings);
+	return 0;
 }
 
 static int imx185_change_mode(struct imx185 *imx185, enum imx185_mode mode)
