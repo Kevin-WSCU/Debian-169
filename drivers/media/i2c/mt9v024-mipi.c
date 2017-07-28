@@ -63,12 +63,12 @@ static DEFINE_MUTEX(mt9v024_lock);
 #define	MT9V024_SYSTEM_CTRL0_START	0x01
 #define MT9V024_SYSTEM_CTRL0_STOP 0x00
 
-#define MT9V024_CHIP_ID		0x00
-#define	MT9V024_CHIP_ID_WORD	0x1324
+#define MT9V024_CHIP_ID		    0x00
+#define	MT9V024_CHIP_ID_WORD 	0x1324
 
+#define TOSHIBA_BRG_ID          0x0000
+#define TOSHIBA_BRG_ID_WORD     0x4401
 
-#define TOSHIBA_BRG_ID_HIGH 0x44
-#define TOSHIBA_BRG_ID_LOW 0x01
 
 
 #define MT9V024_AWB_MANUAL_CONTROL	0x3406
@@ -144,15 +144,394 @@ struct mt9v024 {
 	struct v4l2_subdev *cci;
 };
 
+struct tc358746_reg_struct {
+	u8	size;
+	u16	addr;
+	u32	val;
+};
 static inline struct mt9v024 *to_mt9v024(struct v4l2_subdev *sd)
 {
 	return container_of(sd, struct mt9v024, sd);
 }
 /*Some controllers(MIPI receiver detect the LPxx transaction),so stay in standby after the initial setting*/
-static struct reg_value MT9V024_VGA_60fps[] =
-{
+
+struct tc358746_reg_struct reg_parallel_in_mipi_out[] = {
+   {2, 0x0004, 0x0004},
+   {2, 0x0002, 0x0001},
+   {2, 0x0002, 0x0000},
+   {2, 0x0016, 0x504D},
+   {2, 0x0018, 0x0213},
+   {2, 0x0006, 0x0064},
+   {2, 0x0008, 0x0010},//RAW10
+   {2, 0x0022, 0x0320},//0x0320
+   {4, 0x0140, 0x00000000},
+   {4, 0x0144, 0x00000000},
+   {4, 0x0148, 0x00000000},
+   {4, 0x014C, 0x00000001},
+   {4, 0x0150, 0x00000001},
+   
+   {4, 0x0210, 0x00001200},
+   {4, 0x0214, 0x00000001},
+   {4, 0x0218, 0x00000701},
+   {4, 0x021C, 0x00000000},
+   {4, 0x0220, 0x00000002},
+   {4, 0x0224, 0x00004988},
+   {4, 0x0228, 0x00000005},
+   {4, 0x022C, 0x00000000},
+   {4, 0x0234, 0x00000007},
+   {4, 0x0238, 0x00000001},
+   {4, 0x0204, 0x00000001},//TX PPI starts
+   {4, 0x0518, 0x00000001},
+   {4, 0x0500, 0xA30080A3},
+   {2, 0x0004, 0x0045},
+};
+
+struct tc358746_reg_struct reg_parallel_in_mipi_out_752[] = {
+   {2, 0x0004, 0x0004},
+   {2, 0x0002, 0x0001},
+   {2, 0x0002, 0x0000},
+   {2, 0x0016, 0x504D},
+   {2, 0x0018, 0x0213},
+   {2, 0x0006, 0x0078},
+   {2, 0x0008, 0x0010},//RAW10
+   {2, 0x0022, 0x03ac},//0x0320
+   {4, 0x0140, 0x00000000},
+   {4, 0x0144, 0x00000000},
+   {4, 0x0148, 0x00000000},
+   {4, 0x014C, 0x00000001},
+   {4, 0x0150, 0x00000001},
+   
+   {4, 0x0210, 0x00001200},
+   {4, 0x0214, 0x00000001},
+   {4, 0x0218, 0x00000701},
+   {4, 0x021C, 0x00000000},
+   {4, 0x0220, 0x00000002},
+   {4, 0x0224, 0x00004988},
+   {4, 0x0228, 0x00000005},
+   {4, 0x022C, 0x00000000},
+   {4, 0x0234, 0x00000007},
+   {4, 0x0238, 0x00000001},
+   {4, 0x0204, 0x00000001},//TX PPI starts
+   {4, 0x0518, 0x00000001},
+   {4, 0x0500, 0xA30080A3},
+   {2, 0x0004, 0x0045},
+};
+
+const u16 mt9v024_vga[]={
+
+//  0x01, 0x0001,  // COL_WINDOW_START_CONTEXTA_REG
+  0x01, 0x0038,  // COL_WINDOW_START_CONTEXTA_REG
+  0x02, 0x0004,  // ROW_WINDOW_START_CONTEXTA_REG
+  0x03, 0x01E0,  // ROW_WINDOW_SIZE_CONTEXTA_REG
+//  0x04, 0x02F0,  // COL_WINDOW_SIZE_CONTEXTA_REG
+  0x04, 0x0280,  // COL_WINDOW_SIZE_CONTEXTA_REG
+  0x05, 0x005E,  // HORZ_BLANK_CONTEXTA_REG
+  0x06, 0x0039,//0x0041,  // VERT_BLANK_CONTEXTA_REG//tweak to 59.995fps
+  0x07, 0x0188,  // CONTROL_MODE_REG
+  0x08, 0x0190,  // COARSE_SHUTTER_WIDTH_1_CONTEXTA
+  0x09, 0x01BD,  // COARSE_SHUTTER_WIDTH_2_CONTEXTA
+  0x0A, 0x0164,  // SHUTTER_WIDTH_CONTROL_CONTEXTA
+  0x0B, 0x01C2,  // COARSE_SHUTTER_WIDTH_TOTAL_CONTEXTA
+  0x0C, 0x0000,  // RESET_REG
+  0x0D, 0x0300,  // READ_MODE_REG
+  0x0E, 0x0000,  // READ_MODE2_REG
+  0x0F, 0x0100,  // PIXEL_OPERATION_MODE
+  0x10, 0x0040,  // RESERVED_CORE_10
+  0x11, 0x8042,  // RESERVED_CORE_11
+  0x12, 0x0022,  // RESERVED_CORE_12
+  0x13, 0x2D2E,  // RESERVED_CORE_13
+  0x14, 0x0E02,  // RESERVED_CORE_14
+  0x15, 0x0E32,  // RESERVED_CORE_15
+  0x16, 0x2802,  // RESERVED_CORE_16
+  0x17, 0x3E38,  // RESERVED_CORE_17
+  0x18, 0x3E38,  // RESERVED_CORE_18
+  0x19, 0x2802,  // RESERVED_CORE_19
+  0x1A, 0x0428,  // RESERVED_CORE_1A
+  0x1B, 0x0000,  // LED_OUT_CONTROL
+  0x1C, 0x0302,  // DATA_COMPRESSION
+  0x1D, 0x0040,  // RESERVED_CORE_1D
+  0x1E, 0x0000,  // RESERVED_CORE_1E
+  0x1F, 0x0000,  // RESERVED_CORE_1F
+  0x20, 0x03C7,  // RESERVED_CORE_20
+  0x21, 0x0020,  // RESERVED_CORE_21
+  0x22, 0x0020,  // RESERVED_CORE_22
+  0x23, 0x0010,  // RESERVED_CORE_23
+  0x24, 0x001B,  // RESERVED_CORE_24
+  0x25, 0x001A,  // RESERVED_CORE_25
+  0x26, 0x0004,  // RESERVED_CORE_26
+  0x27, 0x000C,  // RESERVED_CORE_27
+  0x28, 0x0010,  // RESERVED_CORE_28
+  0x29, 0x0010,  // RESERVED_CORE_29
+  0x2A, 0x0020,  // RESERVED_CORE_2A
+  0x2B, 0x0003,  // RESERVED_CORE_2B
+  0x2C, 0x0004,  // VREF_ADC_CONTROL
+  0x2D, 0x0004,  // RESERVED_CORE_2D
+  0x2E, 0x0007,  // RESERVED_CORE_2E
+  0x2F, 0x0003,  // RESERVED_CORE_2F
+  0x30, 0x0003,  // RESERVED_CORE_30
+  0x31, 0x001F,  // V1_CONTROL_CONTEXTA
+  0x32, 0x001A,  // V2_CONTROL_CONTEXTA
+  0x33, 0x0012,  // V3_CONTROL_CONTEXTA
+  0x34, 0x0003,  // V4_CONTROL_CONTEXTA
+  0x35, 0x0020,  // GLOBAL_GAIN_CONTEXTA_REG
+  0x36, 0x0010,  // GLOBAL_GAIN_CONTEXTB_REG
+  0x37, 0x0000,  // RESERVED_CORE_37
+  0x38, 0x0000,  // RESERVED_CORE_38
+  0x39, 0x0025,  // V1_CONTROL_CONTEXTB
+  0x3A, 0x0020,  // V2_CONTROL_CONTEXTB
+  0x3B, 0x0003,  // V3_CONTROL_CONTEXTB
+  0x3C, 0x0003,  // V4_CONTROL_CONTEXTB
+  0x46, 0x231D,  // DARK_AVG_THRESHOLDS
+  0x47, 0x0080,  // CALIB_CONTROL_REG
+  0x4C, 0x0002,  // STEP_SIZE_AVG_MODE
+  0x70, 0x0000,  // ROW_NOISE_CONTROL
+  0x71, 0x002A,  // NOISE_CONSTANT
+  0x72, 0x0000,  // PIXCLK_CONTROL
+  0x7F, 0x0000,  // TEST_DATA
+  0x80, 0x04F4,  // TILE_X0_Y0
+  0x81, 0x04F4,  // TILE_X1_Y0
+  0x82, 0x04F4,  // TILE_X2_Y0
+  0x83, 0x04F4,  // TILE_X3_Y0
+  0x84, 0x04F4,  // TILE_X4_Y0
+  0x85, 0x04F4,  // TILE_X0_Y1
+  0x86, 0x04F4,  // TILE_X1_Y1
+  0x87, 0x04F4,  // TILE_X2_Y1
+  0x88, 0x04F4,  // TILE_X3_Y1
+  0x89, 0x04F4,  // TILE_X4_Y1
+  0x8A, 0x04F4,  // TILE_X0_Y2
+  0x8B, 0x04F4,  // TILE_X1_Y2
+  0x8C, 0x04F4,  // TILE_X2_Y2
+  0x8D, 0x04F4,  // TILE_X3_Y2
+  0x8E, 0x04F4,  // TILE_X4_Y2
+  0x8F, 0x04F4,  // TILE_X0_Y3
+  0x90, 0x04F4,  // TILE_X1_Y3
+  0x91, 0x04F4,  // TILE_X2_Y3
+  0x92, 0x04F4,  // TILE_X3_Y3
+  0x93, 0x04F4,  // TILE_X4_Y3
+  0x94, 0x04F4,  // TILE_X0_Y4
+  0x95, 0x04F4,  // TILE_X1_Y4
+  0x96, 0x04F4,  // TILE_X2_Y4
+  0x97, 0x04F4,  // TILE_X3_Y4
+  0x98, 0x04F4,  // TILE_X4_Y4
+  0x99, 0x0000,  // X0_SLASH5
+  0x9A, 0x0096,  // X1_SLASH5
+  0x9B, 0x012C,  // X2_SLASH5
+  0x9C, 0x01C2,  // X3_SLASH5
+  0x9D, 0x0258,  // X4_SLASH5
+  0x9E, 0x02F0,  // X5_SLASH5
+  0x9F, 0x0000,  // Y0_SLASH5
+  0xA0, 0x0060,  // Y1_SLASH5
+  0xA1, 0x00C0,  // Y2_SLASH5
+  0xA2, 0x0120,  // Y3_SLASH5
+  0xA3, 0x0180,  // Y4_SLASH5
+  0xA4, 0x01E0,  // Y5_SLASH5
+  0xA5, 0x003A,  // DESIRED_BIN
+  0xA6, 0x0002,  // EXP_SKIP_FRM_H
+  0xA8, 0x0000,  // EXP_LPF
+  0xA9, 0x0002,  // GAIN_SKIP_FRM
+  0xAA, 0x0002,  // GAIN_LPF_H
+  0xAB, 0x0040,  // MAX_GAIN
+  0xAC, 0x0001,  // MIN_COARSE_EXPOSURE
+  0xAD, 0x01E0,  // MAX_COARSE_EXPOSURE
+  0xAE, 0x0014,  // BIN_DIFF_THRESHOLD
+  0xAF, 0x0000,  // AUTO_BLOCK_CONTROL,disable AE and AG(both context A and context B)
+  0xB0, 0xABE0,  // PIXEL_COUNT
+  0xB1, 0x0002,  // LVDS_MASTER_CONTROL
+  0xB2, 0x0010,  // LVDS_SHFT_CLK_CONTROL
+  0xB3, 0x0010,  // LVDS_DATA_CONTROL
+  0xB4, 0x0000,  // LVDS_DATA_STREAM_LATENCY
+  0xB5, 0x0000,  // LVDS_INTERNAL_SYNC
+  0xB6, 0x0000,  // LVDS_USE_10BIT_PIXELS
+  0xB7, 0x0000,  // STEREO_ERROR_CONTROL
+  0xBF, 0x0016,  // INTERLACE_FIELD_VBLANK
+  0xC0, 0x000A,  // IMAGE_CAPTURE_NUM
+  0xC2, 0x18D0,  // ANALOG_CONTROLS
+  0xC3, 0x007F,  // RESERVED_CORE_C3
+  0xC4, 0x007F,  // RESERVED_CORE_C4
+  0xC5, 0x007F,  // RESERVED_CORE_C5
+  0xC6, 0x0000,  // NTSC_FV_CONTROL
+  0xC7, 0x4416,  // NTSC_HBLANK
+  0xC8, 0x4421,  // NTSC_VBLANK
+  0xC9, 0x0002,  // COL_WINDOW_START_CONTEXTB_REG
+  0xCA, 0x0004,  // ROW_WINDOW_START_CONTEXTB_REG
+  0xCB, 0x01E0,  // ROW_WINDOW_SIZE_CONTEXTB_REG
+  0xCC, 0x02EE,  // COL_WINDOW_SIZE_CONTEXTB_REG
+  0xCD, 0x0100,  // HORZ_BLANK_CONTEXTB_REG
+  0xCE, 0x0100,  // VERT_BLANK_CONTEXTB_REG
+  0xCF, 0x0190,  // COARSE_SHUTTER_WIDTH_1_CONTEXTB
+  0xD0, 0x01BD,  // COARSE_SHUTTER_WIDTH_2_CONTEXTB
+  0xD1, 0x0064,  // SHUTTER_WIDTH_CONTROL_CONTEXTB
+  0xD2, 0x01C2,  // COARSE_SHUTTER_WIDTH_TOTAL_CONTEXTB
+  0xD3, 0x0000,  // FINE_SHUTTER_WIDTH_1_CONTEXTA
+  0xD4, 0x0000,  // FINE_SHUTTER_WIDTH_2_CONTEXTA
+  0xD5, 0x0000,  // FINE_SHUTTER_WIDTH_TOTAL_CONTEXTA
+  0xD6, 0x0000,  // FINE_SHUTTER_WIDTH_1_CONTEXTB
+  0xD7, 0x0000,  // FINE_SHUTTER_WIDTH_2_CONTEXTB
+  0xD8, 0x0000,  // FINE_SHUTTER_WIDTH_TOTAL_CONTEXTB
+  0xD9, 0x0000,  // MONITOR_MODE_CONTROL
+  0xC2, 0x18D0,  // ANALOG_CONTROLS
+  0x07, 0x0388    // CONTROL_MODE_REG
 
 };
+
+const u16 mt9v024_full[]=
+{
+		0x01, 0x0001, 	// COL_WINDOW_START_CONTEXTA_REG
+//		0x01, 0x0038, 	// COL_WINDOW_START_CONTEXTA_REG
+		0x02, 0x0004, 	// ROW_WINDOW_START_CONTEXTA_REG
+		0x03, 0x01E0, 	// ROW_WINDOW_SIZE_CONTEXTA_REG
+		0x04, 0x02F0, 	// COL_WINDOW_SIZE_CONTEXTA_REG
+//		0x04, 0x0280, 	// COL_WINDOW_SIZE_CONTEXTA_REG
+		0x05, 0x005D, 	// HORZ_BLANK_CONTEXTA_REG
+		0x06, 0x0034,//0x0041, 	// VERT_BLANK_CONTEXTA_REG//tweak to 59.995fps
+		0x07, 0x0188, 	// CONTROL_MODE_REG
+		0x08, 0x0190, 	// COARSE_SHUTTER_WIDTH_1_CONTEXTA
+		0x09, 0x01BD, 	// COARSE_SHUTTER_WIDTH_2_CONTEXTA
+		0x0A, 0x0164, 	// SHUTTER_WIDTH_CONTROL_CONTEXTA
+		0x0B, 0x0020, 	// COARSE_SHUTTER_WIDTH_TOTAL_CONTEXTA
+		0x0C, 0x0000, 	// RESET_REG
+		0x0D, 0x0300, 	// READ_MODE_REG
+		0x0E, 0x0000, 	// READ_MODE2_REG
+		0x0F, 0x0100, 	// PIXEL_OPERATION_MODE
+		0x10, 0x0040, 	// RESERVED_CORE_10
+		0x11, 0x8042, 	// RESERVED_CORE_11
+		0x12, 0x0022, 	// RESERVED_CORE_12
+		0x13, 0x2D2E, 	// RESERVED_CORE_13
+		0x14, 0x0E02, 	// RESERVED_CORE_14
+		0x15, 0x0E32, 	// RESERVED_CORE_15
+		0x16, 0x2802, 	// RESERVED_CORE_16
+		0x17, 0x3E38, 	// RESERVED_CORE_17
+		0x18, 0x3E38, 	// RESERVED_CORE_18
+		0x19, 0x2802, 	// RESERVED_CORE_19
+		0x1A, 0x0428, 	// RESERVED_CORE_1A
+		0x1B, 0x0000, 	// LED_OUT_CONTROL
+		0x1C, 0x0302, 	// DATA_COMPRESSION
+		0x1D, 0x0040, 	// RESERVED_CORE_1D
+		0x1E, 0x0000, 	// RESERVED_CORE_1E
+		0x1F, 0x0000, 	// RESERVED_CORE_1F
+		0x20, 0x03C7, 	// RESERVED_CORE_20
+		0x21, 0x0020, 	// RESERVED_CORE_21
+		0x22, 0x0020, 	// RESERVED_CORE_22
+		0x23, 0x0010, 	// RESERVED_CORE_23
+		0x24, 0x001B, 	// RESERVED_CORE_24
+		0x25, 0x001A, 	// RESERVED_CORE_25
+		0x26, 0x0004, 	// RESERVED_CORE_26
+		0x27, 0x000C, 	// RESERVED_CORE_27
+		0x28, 0x0010, 	// RESERVED_CORE_28
+		0x29, 0x0010, 	// RESERVED_CORE_29
+		0x2A, 0x0020, 	// RESERVED_CORE_2A
+		0x2B, 0x0003, 	// RESERVED_CORE_2B
+		0x2C, 0x0004, 	// VREF_ADC_CONTROL
+		0x2D, 0x0004, 	// RESERVED_CORE_2D
+		0x2E, 0x0007, 	// RESERVED_CORE_2E
+		0x2F, 0x0003, 	// RESERVED_CORE_2F
+		0x30, 0x0003, 	// RESERVED_CORE_30
+		0x31, 0x001F, 	// V1_CONTROL_CONTEXTA
+		0x32, 0x001A, 	// V2_CONTROL_CONTEXTA
+		0x33, 0x0012, 	// V3_CONTROL_CONTEXTA
+		0x34, 0x0003, 	// V4_CONTROL_CONTEXTA
+		0x35, 0x0020, 	// GLOBAL_GAIN_CONTEXTA_REG
+		0x36, 0x0010, 	// GLOBAL_GAIN_CONTEXTB_REG
+		0x37, 0x0000, 	// RESERVED_CORE_37
+		0x38, 0x0000, 	// RESERVED_CORE_38
+		0x39, 0x0025, 	// V1_CONTROL_CONTEXTB
+		0x3A, 0x0020, 	// V2_CONTROL_CONTEXTB
+		0x3B, 0x0003, 	// V3_CONTROL_CONTEXTB
+		0x3C, 0x0003, 	// V4_CONTROL_CONTEXTB
+		0x46, 0x231D, 	// DARK_AVG_THRESHOLDS
+		0x47, 0x0080, 	// CALIB_CONTROL_REG
+		0x4C, 0x0002, 	// STEP_SIZE_AVG_MODE
+		0x70, 0x0000, 	// ROW_NOISE_CONTROL
+		0x71, 0x002A, 	// NOISE_CONSTANT
+		0x72, 0x0000, 	// PIXCLK_CONTROL
+		0x7F, 0x0000, 	// TEST_DATA
+		0x80, 0x04F4, 	// TILE_X0_Y0
+		0x81, 0x04F4, 	// TILE_X1_Y0
+		0x82, 0x04F4, 	// TILE_X2_Y0
+		0x83, 0x04F4, 	// TILE_X3_Y0
+		0x84, 0x04F4, 	// TILE_X4_Y0
+		0x85, 0x04F4, 	// TILE_X0_Y1
+		0x86, 0x04F4, 	// TILE_X1_Y1
+		0x87, 0x04F4, 	// TILE_X2_Y1
+		0x88, 0x04F4, 	// TILE_X3_Y1
+		0x89, 0x04F4, 	// TILE_X4_Y1
+		0x8A, 0x04F4, 	// TILE_X0_Y2
+		0x8B, 0x04F4, 	// TILE_X1_Y2
+		0x8C, 0x04F4, 	// TILE_X2_Y2
+		0x8D, 0x04F4, 	// TILE_X3_Y2
+		0x8E, 0x04F4, 	// TILE_X4_Y2
+		0x8F, 0x04F4, 	// TILE_X0_Y3
+		0x90, 0x04F4, 	// TILE_X1_Y3
+		0x91, 0x04F4, 	// TILE_X2_Y3
+		0x92, 0x04F4, 	// TILE_X3_Y3
+		0x93, 0x04F4, 	// TILE_X4_Y3
+		0x94, 0x04F4, 	// TILE_X0_Y4
+		0x95, 0x04F4, 	// TILE_X1_Y4
+		0x96, 0x04F4, 	// TILE_X2_Y4
+		0x97, 0x04F4, 	// TILE_X3_Y4
+		0x98, 0x04F4, 	// TILE_X4_Y4
+		0x99, 0x0000, 	// X0_SLASH5
+		0x9A, 0x0096, 	// X1_SLASH5
+		0x9B, 0x012C, 	// X2_SLASH5
+		0x9C, 0x01C2, 	// X3_SLASH5
+		0x9D, 0x0258, 	// X4_SLASH5
+		0x9E, 0x02F0, 	// X5_SLASH5
+		0x9F, 0x0000, 	// Y0_SLASH5
+		0xA0, 0x0060, 	// Y1_SLASH5
+		0xA1, 0x00C0, 	// Y2_SLASH5
+		0xA2, 0x0120, 	// Y3_SLASH5
+		0xA3, 0x0180, 	// Y4_SLASH5
+		0xA4, 0x01E0, 	// Y5_SLASH5
+		0xA5, 0x003A, 	// DESIRED_BIN
+		0xA6, 0x0002, 	// EXP_SKIP_FRM_H
+		0xA8, 0x0000, 	// EXP_LPF
+		0xA9, 0x0002, 	// GAIN_SKIP_FRM
+		0xAA, 0x0002, 	// GAIN_LPF_H
+		0xAB, 0x0040, 	// MAX_GAIN
+		0xAC, 0x0001, 	// MIN_COARSE_EXPOSURE
+		0xAD, 0x01E0, 	// MAX_COARSE_EXPOSURE
+		0xAE, 0x0014, 	// BIN_DIFF_THRESHOLD
+		0xAF, 0x0000, 	// AUTO_BLOCK_CONTROL,disable AE and AG(both context A and context B)
+		0xB0, 0xABE0, 	// PIXEL_COUNT
+		0xB1, 0x0002, 	// LVDS_MASTER_CONTROL
+		0xB2, 0x0010, 	// LVDS_SHFT_CLK_CONTROL
+		0xB3, 0x0010, 	// LVDS_DATA_CONTROL
+		0xB4, 0x0000, 	// LVDS_DATA_STREAM_LATENCY
+		0xB5, 0x0000, 	// LVDS_INTERNAL_SYNC
+		0xB6, 0x0000, 	// LVDS_USE_10BIT_PIXELS
+		0xB7, 0x0000, 	// STEREO_ERROR_CONTROL
+		0xBF, 0x0016, 	// INTERLACE_FIELD_VBLANK
+		0xC0, 0x000A, 	// IMAGE_CAPTURE_NUM
+		0xC2, 0x18D0, 	// ANALOG_CONTROLS
+		0xC3, 0x007F, 	// RESERVED_CORE_C3
+		0xC4, 0x007F, 	// RESERVED_CORE_C4
+		0xC5, 0x007F, 	// RESERVED_CORE_C5
+		0xC6, 0x0000, 	// NTSC_FV_CONTROL
+		0xC7, 0x4416, 	// NTSC_HBLANK
+		0xC8, 0x4421, 	// NTSC_VBLANK
+		0xC9, 0x0002, 	// COL_WINDOW_START_CONTEXTB_REG
+		0xCA, 0x0004, 	// ROW_WINDOW_START_CONTEXTB_REG
+		0xCB, 0x01E0, 	// ROW_WINDOW_SIZE_CONTEXTB_REG
+		0xCC, 0x02EE, 	// COL_WINDOW_SIZE_CONTEXTB_REG
+		0xCD, 0x0100, 	// HORZ_BLANK_CONTEXTB_REG
+		0xCE, 0x0100, 	// VERT_BLANK_CONTEXTB_REG
+		0xCF, 0x0190, 	// COARSE_SHUTTER_WIDTH_1_CONTEXTB
+		0xD0, 0x01BD, 	// COARSE_SHUTTER_WIDTH_2_CONTEXTB
+		0xD1, 0x0064, 	// SHUTTER_WIDTH_CONTROL_CONTEXTB
+		0xD2, 0x01C2, 	// COARSE_SHUTTER_WIDTH_TOTAL_CONTEXTB
+		0xD3, 0x0000, 	// FINE_SHUTTER_WIDTH_1_CONTEXTA
+		0xD4, 0x0000, 	// FINE_SHUTTER_WIDTH_2_CONTEXTA
+		0xD5, 0x0000, 	// FINE_SHUTTER_WIDTH_TOTAL_CONTEXTA
+		0xD6, 0x0000, 	// FINE_SHUTTER_WIDTH_1_CONTEXTB
+		0xD7, 0x0000, 	// FINE_SHUTTER_WIDTH_2_CONTEXTB
+		0xD8, 0x0000, 	// FINE_SHUTTER_WIDTH_TOTAL_CONTEXTB
+		0xD9, 0x0000, 	// MONITOR_MODE_CONTROL
+		0xC2, 0x18D0, 	// ANALOG_CONTROLS
+		0x07, 0x0388, 	// CONTROL_MODE_REG
+ 
+};
+
+
 
 
 
@@ -161,12 +540,168 @@ static struct mt9v024_mode_info mt9v024_mode_info_data[MT9V024_MODE_MAX + 1] = {
 		.mode = MT9V024_MODE_VGA,
 		.width = 640,
 		.height = 480,
-		.data = MT9V024_VGA_60fps,
-		.data_size = ARRAY_SIZE(MT9V024_VGA_60fps)
+		.data = mt9v024_vga,
+		.data_size = ARRAY_SIZE(mt9v024_vga)
 	},
 
 };
 
+static u16 i2c_rd16(struct i2c_client *client, u16 reg)
+{
+	int err;
+	u8 value[2];
+	u8 buf[2] = { reg >> 8, reg & 0xff };
+	
+	client->addr = 0x0E;
+	
+	struct i2c_msg msgs[] = {
+		{
+			.addr = client->addr,
+			.flags = 0,
+			.len = 2,
+			.buf = buf,
+		},
+		{
+			.addr = client->addr,
+			.flags = I2C_M_RD,
+			.len = 2,
+			.buf = value,
+		},
+	};
+
+	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
+	if (err != ARRAY_SIZE(msgs)) {
+		printk("%s: reading register 0x%x from 0x%x failed\n",
+			__func__, reg, client->addr);
+	}
+
+	//if (debug < 3)
+	//	return;
+
+
+	//printk("I2C read from address 0x%04X = 0x%02x%02x\n", reg, value[0], value[1]);
+
+	return ((value[0]<<8)|(value[1]));
+
+}
+
+static u32 i2c_rd32(struct i2c_client *client, u16 reg)
+{
+
+	client->addr = 0x0E;
+	
+	int err;
+	u8 value[4];
+	u8 buf[2] = { reg >> 8, reg & 0xff };
+	struct i2c_msg msgs[] = {
+		{
+			.addr = client->addr,
+			.flags = 0,
+			.len = 2,
+			.buf = buf,
+		},
+		{
+			.addr = client->addr,
+			.flags = I2C_M_RD,
+			.len = 4,
+			.buf = value,
+		},
+	};
+
+	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
+	if (err != ARRAY_SIZE(msgs)) {
+		printk("%s: reading register 0x%x from 0x%x failed\n",
+			__func__, reg, client->addr);
+	}
+
+	//if (debug < 3)
+	//	return;
+
+	//printk("I2C read from address 0x%04X = 0x%02x%02x%02x%02x\n", reg, value[2], value[3], value[0], value[1]);
+
+	return ((value[0]<<8)|(value[1])|(value[2]<<24)|(value[3]<<16));
+
+}
+
+static void i2c_wr16(struct i2c_client *client, u16 reg, u16 value)
+{
+	int err, i;
+	struct i2c_msg msg;
+	u8 data[4];
+	
+	client->addr = 0x0E;
+	
+	msg.addr = client->addr;
+	msg.buf = data;
+	msg.len = 4;
+	msg.flags = 0;
+
+	data[0] = reg >> 8;
+	data[1] = reg & 0xff;
+	data[2] = value >> 8;
+	data[3] = (value & 0xff);
+
+	err = i2c_transfer(client->adapter, &msg, 1);
+	if (err != 1) {
+		printk("%s: writing register 0x%x from 0x%x failed\n",
+			__func__, reg, client->addr);
+		return;
+	}
+
+	//if (debug < 3)
+	//	return;
+
+	//printk("I2C write 0x%04X = 0x%02X%02X\n", reg, data[2], data[3]);
+}
+
+static void i2c_wr32(struct i2c_client *client, u16 reg, u32 value)
+{
+	int err, i;
+	struct i2c_msg msg;
+	u8 data[4];
+
+    client->addr = 0x0E;
+	
+	msg.addr = client->addr;
+	msg.buf = data;
+	msg.len = 6;
+	msg.flags = 0;
+
+	data[0] = reg >> 8;
+	data[1] = reg & 0xff;
+	data[2] = value >> 8;
+	data[3] = (value & 0xff);
+	data[4] = value >> 24;
+	data[5] = value >> 16;
+
+	err = i2c_transfer(client->adapter, &msg, 1);
+	if (err != 1) {
+		printk("%s: writing register 0x%x from 0x%x failed\n",
+			__func__, reg, client->addr);
+		return;
+	}
+
+	//if (debug < 3)
+	//	return;
+
+	//printk("I2C write 0x%04X = 0x%02X%02X%02X%02X\n", reg, data[4], data[5], data[2], data[3]);
+}
+
+static int tc358746_reg_init(struct i2c_client *client)
+{
+	int size, i;
+	
+	size = sizeof(reg_parallel_in_mipi_out_752) / sizeof(struct tc358746_reg_struct);
+	for(i = 0; i < size; i++) {
+		if(reg_parallel_in_mipi_out_752[i].size == 2)
+			i2c_wr16(client, reg_parallel_in_mipi_out_752[i].addr, reg_parallel_in_mipi_out_752[i].val);
+		else
+			i2c_wr32(client, reg_parallel_in_mipi_out_752[i].addr, reg_parallel_in_mipi_out_752[i].val);
+	}
+
+
+	return 0;
+}
 static int mt9v024_regulators_enable(struct mt9v024 *mt9v024)
 {
 	int ret;
@@ -216,6 +751,8 @@ static void mt9v024_regulators_disable(struct mt9v024 *mt9v024)
 		dev_err(mt9v024->dev, "io regulator disable failed\n");
 }
 
+
+/*
 static int mt9v024_write_reg_to(struct mt9v024 *mt9v024, u16 reg, u8 val, u16 i2c_addr)
 {
 	int ret;
@@ -228,6 +765,7 @@ static int mt9v024_write_reg_to(struct mt9v024 *mt9v024, u16 reg, u8 val, u16 i2
 
 	return ret;
 }
+*/
 
 static int mt9v024_write_reg(struct mt9v024 *mt9v024, u8 reg, u16 val)
 {
@@ -811,7 +1349,7 @@ static int mt9v024_probe(struct i2c_client *client,
 	struct device *dev = &client->dev;
 	struct device_node *endpoint;
 	struct mt9v024 *mt9v024;
-	u16 chip_id;
+	u16 chip_id,bridge_id;
 	int ret;
 
 	client->addr = 0x90;
@@ -974,6 +1512,14 @@ static int mt9v024_probe(struct i2c_client *client,
 
 	dev_info(dev, "MT9V024 detected at address 0x%x,ID:0x%x\n", client->addr,chip_id);
 
+	ret = mt9v024_read_reg(mt9v024, TOSHIBA_BRG_ID, &bridge_id);
+	if (ret < 0 || chip_id != TOSHIBA_BRG_ID_WORD) {
+		dev_err(dev, "could not read ID high,%x\n",bridge_id);
+		ret = -ENODEV;
+		goto power_down;
+	}
+	dev_info(dev, "Toshiba bridge detected at address 0x%x,ID:0x%x\n", client->addr,bridge_id);
+	
 	mt9v024_s_power(&mt9v024->sd, false);
 
 	mt9v024_entity_init_cfg(&mt9v024->sd, NULL);
