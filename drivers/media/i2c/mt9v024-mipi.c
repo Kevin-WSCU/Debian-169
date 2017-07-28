@@ -246,11 +246,11 @@ static int mt9v024_write_reg(struct mt9v024 *mt9v024, u8 reg, u16 val)
 
 static int mt9v024_read_reg(struct mt9v024 *mt9v024, u8 reg, u16 *val)
 {
-	u16 tmpval;
+	u8 rev_buf[2];
 	int ret;
 	u16 i2c_addr = mt9v024->i2c_client->addr = 0x90;
 
-	ret = msm_cci_ctrl8_read16(i2c_addr, reg, &tmpval, 2);
+	ret = msm_cci_ctrl8_read16(i2c_addr, reg, rev_buf, 2);
 	if (ret < 0) {
 		dev_err(mt9v024->dev,
 			"%s: read reg error %d on addr 0x%x: reg=0x%x\n",
@@ -258,7 +258,7 @@ static int mt9v024_read_reg(struct mt9v024 *mt9v024, u8 reg, u16 *val)
 		return ret;
 	}
 
-	*val = tmpval;
+	*val = (rev_buf[0]<<8)|rev_buf[1];
 
 	return 0;
 }
