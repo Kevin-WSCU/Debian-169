@@ -1324,7 +1324,7 @@ int32_t msm_cci_ctrl16_write16(u16 i2c_addr, u16 addr, u16 *buf, int count)
 	struct msm_camera_cci_ctrl cci_ctrl = { 0 };
 	struct msm_camera_cci_client cci_info = { 0 };
 	struct msm_camera_i2c_reg_setting *i2c_msg;
-	struct msm_camera_i2c_reg_array i2c_cmd[2] = {{0},{0}};
+	struct msm_camera_i2c_reg_array i2c_cmd = {0};
 	int rc;
 
 	CDBG("%s: Enter\n", __func__);
@@ -1336,14 +1336,14 @@ int32_t msm_cci_ctrl16_write16(u16 i2c_addr, u16 addr, u16 *buf, int count)
 	cci_ctrl.cci_info->id_map = 0;
 
 	i2c_msg = &cci_ctrl.cfg.cci_i2c_write_cfg;
-	i2c_msg->reg_setting = &i2c_cmd[0];
+	i2c_msg->reg_setting = &i2c_cmd;
 
 	i2c_msg->size = 1;
 	i2c_msg->addr_type = MSM_CAMERA_I2C_WORD_ADDR;
 	i2c_msg->data_type = MSM_CAMERA_I2C_WORD_DATA;
-	i2c_cmd[0].reg_addr = addr;
-	i2c_cmd[0].reg_data = *buf;
-	i2c_cmd[0].delay = 0;
+	i2c_cmd.reg_addr = addr;
+	i2c_cmd.reg_data = *buf;
+	i2c_cmd.delay = 0;
 	
 	 
 	cci_ctrl.cmd = MSM_CCI_I2C_WRITE;
@@ -1360,7 +1360,7 @@ int32_t msm_cci_ctrl16_write32(u16 i2c_addr, u16 addr, u32 *buf, int count)
 	struct msm_camera_cci_ctrl cci_ctrl = { 0 };
 	struct msm_camera_cci_client cci_info = { 0 };
 	struct msm_camera_i2c_reg_setting *i2c_msg;
-	struct msm_camera_i2c_reg_array i2c_cmd[2] = {{0},{0}};
+	struct msm_camera_i2c_reg_array i2c_cmd = {0};
 	int rc;
 
 	CDBG("%s: Enter\n", __func__);
@@ -1372,14 +1372,14 @@ int32_t msm_cci_ctrl16_write32(u16 i2c_addr, u16 addr, u32 *buf, int count)
 	cci_ctrl.cci_info->id_map = 0;
 
 	i2c_msg = &cci_ctrl.cfg.cci_i2c_write_cfg;
-	i2c_msg->reg_setting = &i2c_cmd[0];
+	i2c_msg->reg_setting = &i2c_cmd;
 
 	i2c_msg->size = 1;
 	i2c_msg->addr_type = MSM_CAMERA_I2C_WORD_ADDR;
 	i2c_msg->data_type = MSM_CAMERA_I2C_DWORD_DATA;
-	i2c_cmd[0].reg_addr = addr;
-	i2c_cmd[0].reg_data = *buf;
-	i2c_cmd[0].delay = 0;
+	i2c_cmd.reg_addr = addr;
+	i2c_cmd.reg_data = *buf;
+	i2c_cmd.delay = 0;
 	
 	 
 	cci_ctrl.cmd = MSM_CCI_I2C_WRITE;
