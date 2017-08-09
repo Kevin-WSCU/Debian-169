@@ -237,7 +237,7 @@ struct msm_camera_sensor_slave_info {
 
 struct msm_camera_i2c_reg_array {
 	uint16_t reg_addr;
-	uint16_t reg_data;
+	uint32_t reg_data;
 	uint32_t delay;
 };
 
