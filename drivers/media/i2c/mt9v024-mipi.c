@@ -1445,6 +1445,7 @@ static int mt9v024_probe(struct i2c_client *client,
 	struct mt9v024 *mt9v024;
 	u16 chip_id,bridge_id;
 	u16 alpha = 0;
+	u16 beta = 0;
 	
 	int ret;
 
@@ -1629,6 +1630,11 @@ static int mt9v024_probe(struct i2c_client *client,
 
 	toshiba_bridge_write_reg32(mt9v024, 0x0500, 0xA30080A3);
 
+
+	mt9v024_read_reg(mt9v024, 0x04, &beta);
+	dev_info(dev, "MT9V024 reg beta:0x%x\n", beta);
+
+	
 		
 	mt9v024_s_power(&mt9v024->sd, false);
 
