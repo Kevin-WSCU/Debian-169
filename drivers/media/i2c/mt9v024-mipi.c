@@ -554,148 +554,6 @@ static struct mt9v024_mode_info mt9v024_mode_info_data[MT9V024_MODE_MAX + 1] = {
 
 };
 
-/*
-static u16 i2c_rd16(struct i2c_client *client, u16 reg)
-{
-	int err;
-	u8 value[2];
-	u8 buf[2] = { reg >> 8, reg & 0xff };
-	
-	client->addr = 0x1C;
-	
-	struct i2c_msg msgs[] = {
-		{
-			.addr = client->addr,
-			.flags = 0,
-			.len = 2,
-			.buf = buf,
-		},
-		{
-			.addr = client->addr,
-			.flags = I2C_M_RD,
-			.len = 2,
-			.buf = value,
-		},
-	};
-
-	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-	if (err != ARRAY_SIZE(msgs)) {
-		printk("%s: reading register 0x%x from 0x%x failed\n",
-			__func__, reg, client->addr);
-	}
-
-	//if (debug < 3)
-	//	return;
-
-
-	//printk("I2C read from address 0x%04X = 0x%02x%02x\n", reg, value[0], value[1]);
-
-	return ((value[0]<<8)|(value[1]));
-
-}
-
-static u32 i2c_rd32(struct i2c_client *client, u16 reg)
-{
-
-	client->addr = 0x0E;
-	
-	int err;
-	u8 value[4];
-	u8 buf[2] = { reg >> 8, reg & 0xff };
-	struct i2c_msg msgs[] = {
-		{
-			.addr = client->addr,
-			.flags = 0,
-			.len = 2,
-			.buf = buf,
-		},
-		{
-			.addr = client->addr,
-			.flags = I2C_M_RD,
-			.len = 4,
-			.buf = value,
-		},
-	};
-
-	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-	if (err != ARRAY_SIZE(msgs)) {
-		printk("%s: reading register 0x%x from 0x%x failed\n",
-			__func__, reg, client->addr);
-	}
-
-	//if (debug < 3)
-	//	return;
-
-	//printk("I2C read from address 0x%04X = 0x%02x%02x%02x%02x\n", reg, value[2], value[3], value[0], value[1]);
-
-	return ((value[0]<<8)|(value[1])|(value[2]<<24)|(value[3]<<16));
-
-}
-
-static void i2c_wr16(struct i2c_client *client, u16 reg, u16 value)
-{
-	int err, i;
-	struct i2c_msg msg;
-	u8 data[4];
-	
-	client->addr = 0x0E;
-	
-	msg.addr = client->addr;
-	msg.buf = data;
-	msg.len = 4;
-	msg.flags = 0;
-
-	data[0] = reg >> 8;
-	data[1] = reg & 0xff;
-	data[2] = value >> 8;
-	data[3] = (value & 0xff);
-
-	err = i2c_transfer(client->adapter, &msg, 1);
-	if (err != 1) {
-		printk("%s: writing register 0x%x from 0x%x failed\n",
-			__func__, reg, client->addr);
-		return;
-	}
-
-	//if (debug < 3)
-	//	return;
-
-	//printk("I2C write 0x%04X = 0x%02X%02X\n", reg, data[2], data[3]);
-}
-
-static void i2c_wr32(struct i2c_client *client, u16 reg, u32 value)
-{
-	int err, i;
-	struct i2c_msg msg;
-	u8 data[4];
-
-    client->addr = 0x0E;
-	
-	msg.addr = client->addr;
-	msg.buf = data;
-	msg.len = 6;
-	msg.flags = 0;
-
-	data[0] = reg >> 8;
-	data[1] = reg & 0xff;
-	data[2] = value >> 8;
-	data[3] = (value & 0xff);
-	data[4] = value >> 24;
-	data[5] = value >> 16;
-
-	err = i2c_transfer(client->adapter, &msg, 1);
-	if (err != 1) {
-		printk("%s: writing register 0x%x from 0x%x failed\n",
-			__func__, reg, client->addr);
-		return;
-	}
-
-	//if (debug < 3)
-	//	return;
-
-	//printk("I2C write 0x%04X = 0x%02X%02X%02X%02X\n", reg, data[4], data[5], data[2], data[3]);
-}
-*/
 
 static int mt9v024_regulators_enable(struct mt9v024 *mt9v024)
 {
@@ -849,28 +707,62 @@ static int toshiba_bridge_read_reg(struct mt9v024 *mt9v024, u16 reg, u16 *val)
 	return 0;
 }
 
-static int mt9v024_init(struct mt9v024 *mt9v024)
+static int mt9v024_init(struct mt9v024 *mt9v024,enum mt9v024_mode mode)
 {
 		int ret;u16 i;
-			
-		for(i = 0; i < sizeof(mt9v024_full)/sizeof(u16);i = i+2 )
+
+if(mode==0)	
+{
+		for(i = 0; i < sizeof(mt9v024_vga)/sizeof(u16);i = i+2 )
 			{
-				ret = mt9v024_write_reg(mt9v024,(u8)mt9v024_full[i],mt9v024_full[i+1]);
+				ret = mt9v024_write_reg(mt9v024,(u8)mt9v024_vga[i],mt9v024_vga[i+1]);
 				if(ret<0)
 					{
 						dev_err(mt9v024->dev, "sensor setting failed at index:%d\n",i);
 						break;
 				}
 			}
+}else
+{
+	for(i = 0; i < sizeof(mt9v024_full)/sizeof(u16);i = i+2 )
+		{
+			ret = mt9v024_write_reg(mt9v024,(u8)mt9v024_full[i],mt9v024_full[i+1]);
+			if(ret<0)
+				{
+					dev_err(mt9v024->dev, "sensor setting failed at index:%d\n",i);
+					break;
+			}
+		}
+
+}
+		
 		return ret;
 	
 }
 
-static int tc358746_reg_init(struct mt9v024 *mt9v024)
+static int tc358746_reg_init(struct mt9v024 *mt9v024,enum mt9v024_mode mode)
 {
 	int size, ret,i;
+
+if(mode==0)
+{
+	size = sizeof(reg_parallel_in_mipi_out) / sizeof(struct tc358746_reg_struct);
 	
-	size = sizeof(reg_parallel_in_mipi_out_752) / sizeof(struct tc358746_reg_struct);
+	for(i = 0; i < size; i++) {		
+		if(reg_parallel_in_mipi_out[i].size == 2)			
+			ret = toshiba_bridge_write_reg(mt9v024, reg_parallel_in_mipi_out[i].addr, (u16)reg_parallel_in_mipi_out[i].val);
+		else
+			ret = toshiba_bridge_write_reg32(mt9v024, reg_parallel_in_mipi_out[i].addr, reg_parallel_in_mipi_out[i].val);
+		if(ret<0)
+			{
+				dev_err(mt9v024->dev, "bridge setting failed at index:%d\n",i);			
+				break;
+			}
+	}
+}
+else
+{
+		size = sizeof(reg_parallel_in_mipi_out_752) / sizeof(struct tc358746_reg_struct);
 	
 	for(i = 0; i < size; i++) {		
 		if(reg_parallel_in_mipi_out_752[i].size == 2)			
@@ -883,7 +775,8 @@ static int tc358746_reg_init(struct mt9v024 *mt9v024)
 				break;
 			}
 	}
-	return 0;
+}
+	return ret;
 }
 
 static int mt9v024_set_aec_mode(struct mt9v024 *mt9v024, u32 mode)
@@ -956,9 +849,9 @@ static int mt9v024_change_mode(struct mt9v024 *mt9v024, enum mt9v024_mode mode)
 
     //it may take the mode parameter in next update
     
-	ret = mt9v024_init(mt9v024);
+	ret = mt9v024_init(mt9v024,mode);
 
-	ret |= tc358746_reg_init(mt9v024);
+	ret |= tc358746_reg_init(mt9v024,mode);
 	
 	return ret;
 }
@@ -1396,13 +1289,12 @@ static int mt9v024_s_stream(struct v4l2_subdev *subdev, int enable)
 		}
 //		ret = mt9v024_write_reg(mt9v024, MT9V024_SYSTEM_CTRL0,
 //				       MT9V024_SYSTEM_CTRL0_START);
-*/
-		ret = mt9v024_write_reg(mt9v024, MT9V024_SYSTEM_CTRL0,
-				       MT9V024_SYSTEM_CTRL0_START);
-
 		if (ret < 0)
-			return ret;
+		return ret;
+
+*/
 	} else {
+		//Check register to disable streaming,sensor or bridge
 		ret = mt9v024_write_reg(mt9v024, MT9V024_SYSTEM_CTRL0,
 				       MT9V024_SYSTEM_CTRL0_STOP);
 		if (ret < 0)
@@ -1616,10 +1508,10 @@ static int mt9v024_probe(struct i2c_client *client,
 		ret = -ENODEV;
 		goto power_down;
 	}
-	dev_info(dev, "Toshiba bridge detected at address 0x%x,ID:0x%x\n", client->addr,bridge_id);
+	dev_info(dev, "TOSHIBA MIPI bridge detected at address 0x%x,ID:0x%x\n", client->addr,bridge_id);
 
 
-
+/*
 	mt9v024_write_reg(mt9v024, 0x04, 0x0280);
 
 	toshiba_bridge_write_reg(mt9v024, 0x0016, 0x504D);
@@ -1634,7 +1526,7 @@ static int mt9v024_probe(struct i2c_client *client,
 	mt9v024_read_reg(mt9v024, 0x04, &beta);
 	dev_info(dev, "MT9V024 reg beta:0x%x\n", beta);
 
-	
+	*/
 		
 	mt9v024_s_power(&mt9v024->sd, false);
 
