@@ -540,7 +540,7 @@ static struct mt9v024_mode_info mt9v024_mode_info_data[MT9V024_MODE_MAX + 1] = {
 	{
 		.mode = MT9V024_MODE_VGA,
 		.width = 640,
-		.height = 480,
+		.height = 120,
 		.data = mt9v024_vga,
 		.data_size = ARRAY_SIZE(mt9v024_vga)
 	},
@@ -835,10 +835,49 @@ static int mt9v024_set_register_array(struct mt9v024 *mt9v024,
 }
 
 
+static int disable_mipi_stream(struct mt9v024 *mt9v024)
+{
+  u16 regval,ret;
+
+//Stop frame
+    int tmp = 0x0032;
+	ret = toshiba_bridge_read_reg(mt9v024, tmp, &regval);     
+	printk("bridge 0x32:0x%x",tmp,regval);
+	    regval|=(1<<15);
+	toshiba_bridge_write_reg(mt9v024,0x32,regval);		
+
+	msleep(20);
+//Clear PP_en
+	toshiba_bridge_write_reg(mt9v024,0x04,0x04);
+
+//Set Rstptr
+		regval=(1<<14);
+	toshiba_bridge_write_reg(mt9v024,0x32,regval);
+
+
+}
+
+static int enable_mipi_stream(struct mt9v024 *mt9v024)
+{
+  u16 regval,ret;
+
+//Clear those 2 bits for frame stop and Rstptr
+    int tmp = 0x0032;
+	ret = toshiba_bridge_read_reg(mt9v024, tmp, &regval);     
+	    regval&=~((1<<15)|(1<<14));
+	toshiba_bridge_write_reg(mt9v024,0x32,regval);		
+
+//Clear PP_en
+	toshiba_bridge_write_reg(mt9v024,0x04,0x44);
+
+}
+
 
 static int mt9v024_change_mode(struct mt9v024 *mt9v024, enum mt9v024_mode mode)
 {
 	int ret;
+	u16 regval,alpha;
+	
 /*
 	struct reg_value *settings;
 	u32 num_settings;
@@ -849,10 +888,14 @@ static int mt9v024_change_mode(struct mt9v024 *mt9v024, enum mt9v024_mode mode)
 
     //it may take the mode parameter in next update
     
-	ret = mt9v024_init(mt9v024,mode);
+//	ret = mt9v024_init(mt9v024,mode);
 
-	ret |= tc358746_reg_init(mt9v024,mode);
-	
+//	ret |= tc358746_reg_init(mt9v024,mode);
+
+//Try to check a few registers set by STM32
+
+	enable_mipi_stream(mt9v024);
+
 	return ret;
 }
 
@@ -1242,7 +1285,7 @@ static int mt9v024_set_format(struct v4l2_subdev *sd,
 			format->which);
 	__format->width = __crop->width;
 	__format->height = __crop->height;
-	__format->code = MEDIA_BUS_FMT_SRGGB10_1X10;
+	__format->code = MEDIA_BUS_FMT_SRGGB12_1X12;
 	__format->field = V4L2_FIELD_NONE;
 	__format->colorspace = V4L2_COLORSPACE_SRGB;
 
@@ -1293,6 +1336,7 @@ static int mt9v024_s_stream(struct v4l2_subdev *subdev, int enable)
 		return ret;
 
 */
+
 	} else {
 		//Check register to disable streaming,sensor or bridge
 		ret = mt9v024_write_reg(mt9v024, MT9V024_SYSTEM_CTRL0,
@@ -1492,6 +1536,7 @@ static int mt9v024_probe(struct i2c_client *client,
 		goto unregister_subdev;
 	}
 
+/*
 	ret = mt9v024_read_reg(mt9v024, MT9V024_CHIP_ID, &chip_id);
 	if (ret < 0 || chip_id != MT9V024_CHIP_ID_WORD) {
 		dev_err(dev, "could not read sensor ID ,%x\n",chip_id);
@@ -1500,7 +1545,7 @@ static int mt9v024_probe(struct i2c_client *client,
 	}
 
 	dev_info(dev, "MT9V024 detected at address 0x%x,ID:0x%x\n", client->addr,chip_id);
-
+*/	
 	ret = toshiba_bridge_read_reg(mt9v024, TOSHIBA_BRG_ID, &bridge_id);
 
 	if (ret< 0 || bridge_id != TOSHIBA_BRG_ID_WORD) {
@@ -1509,6 +1554,8 @@ static int mt9v024_probe(struct i2c_client *client,
 		goto power_down;
 	}
 	dev_info(dev, "TOSHIBA MIPI bridge detected at address 0x%x,ID:0x%x\n", client->addr,bridge_id);
+
+	disable_mipi_stream(mt9v024);
 
 
 /*
