@@ -1545,7 +1545,7 @@ static int mt9v024_probe(struct i2c_client *client,
 	}
 
 	dev_info(dev, "MT9V024 detected at address 0x%x,ID:0x%x\n", client->addr,chip_id);
-*/	
+	
 	ret = toshiba_bridge_read_reg(mt9v024, TOSHIBA_BRG_ID, &bridge_id);
 
 	if (ret< 0 || bridge_id != TOSHIBA_BRG_ID_WORD) {
@@ -1556,7 +1556,7 @@ static int mt9v024_probe(struct i2c_client *client,
 	dev_info(dev, "TOSHIBA MIPI bridge detected at address 0x%x,ID:0x%x\n", client->addr,bridge_id);
 
 	disable_mipi_stream(mt9v024);
-
+*/
 
 /*
 	mt9v024_write_reg(mt9v024, 0x04, 0x0280);
