@@ -156,38 +156,40 @@ static inline struct mt9v024 *to_mt9v024(struct v4l2_subdev *sd)
 }
 /*Some controllers(MIPI receiver detect the LPxx transaction),so stay in standby after the initial setting*/
 
-struct tc358746_reg_struct reg_parallel_in_mipi_out[] = {
-   {2, 0x0004, 0x0004},
-   {2, 0x0002, 0x0001},
-   {2, 0x0002, 0x0000},
-   {2, 0x0016, 0x504D},
-   {2, 0x0018, 0x0213},
-   {2, 0x0006, 0x0064},
-   {2, 0x0008, 0x0010},//RAW10
-   {2, 0x0022, 0x0320},//0x0320
-   {4, 0x0140, 0x00000000},
-   {4, 0x0144, 0x00000000},
-   {4, 0x0148, 0x00000000},
-   {4, 0x014C, 0x00000001},
-   {4, 0x0150, 0x00000001},
-   
-   {4, 0x0210, 0x00001200},
-   {4, 0x0214, 0x00000001},
-   {4, 0x0218, 0x00000701},
-   {4, 0x021C, 0x00000000},
-   {4, 0x0220, 0x00000002},
-   {4, 0x0224, 0x00004988},
-   {4, 0x0228, 0x00000005},
-   {4, 0x022C, 0x00000000},
-   {4, 0x0234, 0x00000007},
-   {4, 0x0238, 0x00000001},
-   {4, 0x0204, 0x00000001},//TX PPI starts
-   {4, 0x0518, 0x00000001},
-   {4, 0x0500, 0xA30080A3},
-   {2, 0x0004, 0x0045},
+struct tc358746_reg_struct reg_parallel_in_mipi_out_ccd[] = {
+
+	{2, 0x0004, 0x0004},
+	{2, 0x0002, 0x0001},//reset
+	{2, 0x0002, 0x0000},//reset release
+	{2, 0x0016, 0x5040},
+	{2, 0x0018, 0x0213},
+	{2, 0x0006, 0x0030},
+	{2, 0x0008, 0x0020},//RAW12
+	{2, 0x0022, 0x03C0},//0x03C0
+	{4, 0x0140, 0x00000000},
+	{4, 0x0144, 0x00000000},
+	{4, 0x0148, 0x00000001},
+	{4, 0x014C, 0x00000001},
+	{4, 0x0150, 0x00000001},
+	
+	{4, 0x0210, 0x00000E00},
+	{4, 0x0214, 0x00000001},
+	{4, 0x0218, 0x00000001},
+	{4, 0x021C, 0x00000000},
+	{4, 0x0220, 0x00000002},
+	{4, 0x0224, 0x00004988},
+	{4, 0x0228, 0x00000007},
+	{4, 0x022C, 0x00000001},
+	{4, 0x0234, 0x00000003},
+	{4, 0x0238, 0x00000001},
+	{4, 0x0204, 0x00000001},//TX PPI starts
+	{4, 0x0518, 0x00000001},
+	{4, 0x0500, 0xA30080A1},
+	{2, 0x0004, 0x0044}
+	
 };
 
-struct tc358746_reg_struct reg_parallel_in_mipi_out_752[] = {
+struct tc358746_reg_struct reg_parallel_in_mipi_out_752_ccd[] = {
    {2, 0x0004, 0x0004},
    {2, 0x0002, 0x0001},
    {2, 0x0002, 0x0000},
@@ -740,19 +742,19 @@ if(mode==0)
 	
 }
 
-static int tc358746_reg_init(struct mt9v024 *mt9v024,enum mt9v024_mode mode)
+static int tc358746_reg_init_ccd(struct mt9v024 *mt9v024,enum mt9v024_mode mode)
 {
 	int size, ret,i;
 
 if(mode==0)
 {
-	size = sizeof(reg_parallel_in_mipi_out) / sizeof(struct tc358746_reg_struct);
+	size = sizeof(reg_parallel_in_mipi_out_ccd) / sizeof(struct tc358746_reg_struct);
 	
 	for(i = 0; i < size; i++) {		
-		if(reg_parallel_in_mipi_out[i].size == 2)			
-			ret = toshiba_bridge_write_reg(mt9v024, reg_parallel_in_mipi_out[i].addr, (u16)reg_parallel_in_mipi_out[i].val);
+		if(reg_parallel_in_mipi_out_ccd[i].size == 2)			
+			ret = toshiba_bridge_write_reg(mt9v024, reg_parallel_in_mipi_out_ccd[i].addr, (u16)reg_parallel_in_mipi_out_ccd[i].val);
 		else
-			ret = toshiba_bridge_write_reg32(mt9v024, reg_parallel_in_mipi_out[i].addr, reg_parallel_in_mipi_out[i].val);
+			ret = toshiba_bridge_write_reg32(mt9v024, reg_parallel_in_mipi_out_ccd[i].addr, reg_parallel_in_mipi_out_ccd[i].val);
 		if(ret<0)
 			{
 				dev_err(mt9v024->dev, "bridge setting failed at index:%d\n",i);			
@@ -762,13 +764,13 @@ if(mode==0)
 }
 else
 {
-		size = sizeof(reg_parallel_in_mipi_out_752) / sizeof(struct tc358746_reg_struct);
+		size = sizeof(reg_parallel_in_mipi_out_752_ccd) / sizeof(struct tc358746_reg_struct);
 	
 	for(i = 0; i < size; i++) {		
-		if(reg_parallel_in_mipi_out_752[i].size == 2)			
-			ret = toshiba_bridge_write_reg(mt9v024, reg_parallel_in_mipi_out_752[i].addr, (u16)reg_parallel_in_mipi_out_752[i].val);
+		if(reg_parallel_in_mipi_out_752_ccd[i].size == 2)			
+			ret = toshiba_bridge_write_reg(mt9v024, reg_parallel_in_mipi_out_752_ccd[i].addr, (u16)reg_parallel_in_mipi_out_752_ccd[i].val);
 		else
-			ret = toshiba_bridge_write_reg32(mt9v024, reg_parallel_in_mipi_out_752[i].addr, reg_parallel_in_mipi_out_752[i].val);
+			ret = toshiba_bridge_write_reg32(mt9v024, reg_parallel_in_mipi_out_752_ccd[i].addr, reg_parallel_in_mipi_out_752_ccd[i].val);
 		if(ret<0)
 			{
 				dev_err(mt9v024->dev, "bridge setting failed at index:%d\n",i);			
@@ -890,11 +892,11 @@ static int mt9v024_change_mode(struct mt9v024 *mt9v024, enum mt9v024_mode mode)
     
 //	ret = mt9v024_init(mt9v024,mode);
 
-//	ret |= tc358746_reg_init(mt9v024,mode);
+	ret |= tc358746_reg_init_ccd(mt9v024,mode);
 
 //Try to check a few registers set by STM32
 
-	enable_mipi_stream(mt9v024);
+//	enable_mipi_stream(mt9v024);// Enable or disable MIPI Bridge doesn't stop MIPI clock
 
 	return ret;
 }
