@@ -542,7 +542,7 @@ static struct mt9v024_mode_info mt9v024_mode_info_data[MT9V024_MODE_MAX + 1] = {
 	{
 		.mode = MT9V024_MODE_VGA,
 		.width = 640,
-		.height = 120,
+		.height = 480,
 		.data = mt9v024_vga,
 		.data_size = ARRAY_SIZE(mt9v024_vga)
 	},
