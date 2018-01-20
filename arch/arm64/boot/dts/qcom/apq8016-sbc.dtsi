@@ -326,7 +326,7 @@
 			csiphy0_ep:endpoint {
 				clock-lanes = <1>;
 				data-lanes = <0>;
-				qcom,settle-cnt = <0x44>;
+				qcom,settle-cnt = <0x20>;
 				remote-endpoint = <&mt9v024_ep>;
 			};
 		};
